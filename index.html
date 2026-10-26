@@ -23,7 +23,10 @@
 </head>
 <body>
 <h1>Family Football Pool — Live Odds</h1>
+<div style="display:flex;justify-content:space-between;align-items:center">
 <div class="sub" id="sub">loading…</div>
+<select id="wk" style="font-size:.9rem;margin-bottom:14px"></select>
+</div>
 <table id="tbl"><thead>
 <tr><th>Entry</th><th>W</th><th>TB</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th></tr>
 </thead><tbody></tbody></table>
@@ -35,9 +38,46 @@ simulate the actual Monday point total — in reality a tie is won outright by
 whoever's TB guess is closest. Refreshes automatically.</footer>
 <script>
 const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";
+let weeks = [], liveWeek = null;
+function fillDropdown(d) {
+  const sel = document.getElementById("wk");
+  if (sel.options.length) return;
+  liveWeek = d.week; weeks = d.past_weeks || [];
+  sel.add(new Option(`Week ${d.week} (live)`, "live"));
+  for (const n of [...weeks].reverse()) sel.add(new Option(`Week ${n} (final)`, n));
+  sel.onchange = load;
+}
+function renderFinal(d) {
+  document.getElementById("sub").textContent =
+    `Week ${d.week} — FINAL · actual MNF total ${d.tb_total} · $${d.pot} pot`;
+  document.querySelector("#tbl thead tr").innerHTML =
+    "<th>Place</th><th>Entry</th><th>W-L</th><th>TB</th><th>TB diff</th><th>$ won</th><th></th>";
+  const tb = document.querySelector("#tbl tbody");
+  tb.innerHTML = "";
+  for (const e of d.entries) {
+    const tr = document.createElement("tr");
+    if (e.won > 0) tr.className = "money";
+    tr.innerHTML = `<td>${e.place ?? "–"}</td><td style="text-align:left">${e.handle}</td>` +
+      `<td>${e.wins}-${e.losses}</td><td>${e.tb ?? "–"}</td><td>${e.td ?? "–"}</td>` +
+      `<td>${e.won ? "$" + e.won.toFixed(2) : "–"}</td>` +
+      `<td style="text-align:left"><span class="bar" style="width:${Math.round(e.won / d.payouts[0] * 60)}px"></span></td>`;
+    tb.appendChild(tr);
+  }
+  document.getElementById("games").innerHTML =
+    "<b>Results:</b> " + d.games.map(g => `${g.name}: ${g.winner}`).join(" · ");
+}
 async function load() {
   try {
+    const sel = document.getElementById("wk");
+    const pick = sel.options.length ? sel.value : "live";
+    if (pick !== "live") {
+      renderFinal(await (await fetch(`week_${pick}.json?t=` + Date.now())).json());
+      return;
+    }
     const d = await (await fetch("data.json?t=" + Date.now())).json();
+    fillDropdown(d);
+    document.querySelector("#tbl thead tr").innerHTML =
+      "<th>Entry</th><th>W</th><th>TB</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th>";
     const when = new Date(d.updated).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"});
     document.getElementById("sub").textContent =
       `Week ${d.week} · $${d.pot} pot ($${d.payouts.join(" / $")}) · updated ${when}`;
@@ -47,7 +87,7 @@ async function load() {
       const tr = document.createElement("tr");
       if (e.ev >= d.payouts[d.payouts.length - 1]) tr.className = "money";
       const p = e.p_place;
-      tr.innerHTML = `<td>${e.handle}</td><td>${e.wins}</td><td>${e.tb ?? "–"}</td>` +
+      tr.innerHTML = `<td style="text-align:left">${e.handle}</td><td>${e.wins}</td><td>${e.tb ?? "–"}</td>` +
         `<td>${pct(p[0])}</td><td>${pct(p[1])}</td><td>${pct(p[2])}</td><td>${pct(p[3])}</td>` +
         `<td>$${e.ev.toFixed(2)}</td>` +
         `<td style="text-align:left"><span class="bar" style="width:${Math.round(e.ev / d.payouts[0] * 60)}px"></span></td>`;
