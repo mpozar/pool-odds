@@ -6,16 +6,22 @@
 <title>Family Football Pool — Live Odds</title>
 <style>
   :root { color-scheme: light dark; }
-  body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 720px;
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 980px;
          padding: 16px; background: Canvas; color: CanvasText; }
   h1 { font-size: 1.25rem; margin: 0 0 2px; }
-  .sub { opacity: .65; font-size: .85rem; margin-bottom: 14px; }
-  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
-  th, td { padding: 5px 8px; text-align: right; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
-  th { font-weight: 600; opacity: .7; font-size: .8rem; }
-  td:first-child, th:first-child { text-align: left; }
+  .sub { opacity: .65; font-size: .85rem; }
+  .controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 8px 0 12px; font-size: .85rem; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; white-space: nowrap; }
+  th, td { padding: 4px 7px; text-align: right; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
+  th { font-weight: 600; opacity: .75; font-size: .76rem; vertical-align: bottom; }
+  th small { display: block; font-weight: 400; opacity: .8; }
+  td.name, th.name { text-align: left; }
+  td.pick { text-align: center; font-size: .82rem; }
+  td.ok  { background: color-mix(in srgb, #3f9e4d 28%, transparent); }
+  td.bad { background: color-mix(in srgb, #c2443c 24%, transparent); }
   tr.money td { font-weight: 600; }
-  .games { margin-top: 18px; font-size: .85rem; opacity: .85; line-height: 1.7; }
+  .games { margin-top: 16px; font-size: .85rem; opacity: .85; line-height: 1.7; }
   .live { color: #c2443c; font-weight: 700; }
   .bar { display: inline-block; height: 9px; background: #4a7dbd; border-radius: 2px; vertical-align: middle; }
   footer { margin-top: 18px; font-size: .75rem; opacity: .5; }
@@ -23,52 +29,105 @@
 </head>
 <body>
 <h1>Family Football Pool — Live Odds</h1>
-<div style="display:flex;justify-content:space-between;align-items:center">
-<div class="sub" id="sub">loading…</div>
-<select id="wk" style="font-size:.9rem;margin-bottom:14px"></select>
+<div class="controls">
+  <div class="sub" id="sub">loading…</div>
+  <span style="flex:1"></span>
+  <label><input type="checkbox" id="showPicks"> show picks</label>
+  <label><input type="checkbox" id="hideDone"> hide finished games</label>
+  <select id="wk" style="font-size:.9rem"></select>
 </div>
-<table id="tbl"><thead>
-<tr><th>Entry</th><th>W</th><th>TB</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th></tr>
-</thead><tbody></tbody></table>
+<div class="scroll"><table id="tbl"><thead><tr></tr></thead><tbody></tbody></table></div>
 <div class="games" id="games"></div>
 <footer>Simulated from betting-market win probabilities (live during games).
 Note on ties: the projection splits tied places evenly (a two-way tie for 1st
 counts as half of 1st and half of 2nd for each entry). It does not use or
 simulate the actual Monday point total — in reality a tie is won outright by
-whoever's TB guess is closest. Refreshes automatically.</footer>
+whoever's TB guess is closest. Picks appear once a game has locked. Refreshes
+automatically.</footer>
 <script>
 const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";
-let weeks = [], liveWeek = null;
+const $ = id => document.getElementById(id);
+
+function gameCols(d) {
+  // indices of game columns to display, honoring "hide finished games"
+  const hide = $("hideDone").checked;
+  return d.games.map((g, i) => ({g, i})).filter(x => !hide || x.g.status !== "final");
+}
+function gameHeader(g) {
+  // result if finished, otherwise home-side win probability
+  const sub = g.status === "final" ? (g.winner || "?")
+    : `${g.home} ${pct(g.p_home)}` + (g.live ? " LIVE" : "");
+  return `<th>${g.name}<small>${sub}</small></th>`;
+}
+function pickCell(g, pick) {
+  if (!pick) return `<td class="pick">–</td>`;
+  let cls = "pick";
+  if (g.status === "final" && g.winner) cls += pick === g.winner ? " ok" : " bad";
+  return `<td class="${cls}">${pick}</td>`;
+}
+
+let weeks = [];
 function fillDropdown(d) {
-  const sel = document.getElementById("wk");
+  const sel = $("wk");
   if (sel.options.length) return;
-  liveWeek = d.week; weeks = d.past_weeks || [];
+  weeks = d.past_weeks || [];
   sel.add(new Option(`Week ${d.week} (live)`, "live"));
   for (const n of [...weeks].reverse()) sel.add(new Option(`Week ${n} (final)`, n));
   sel.onchange = load;
 }
-function renderFinal(d) {
-  document.getElementById("sub").textContent =
-    `Week ${d.week} — FINAL · actual MNF total ${d.tb_total} · $${d.pot} pot`;
+
+function renderLive(d) {
+  const when = new Date(d.updated).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"});
+  $("sub").textContent = `Week ${d.week} · $${d.pot} pot ($${d.payouts.join(" / $")}) · updated ${when}`;
+  const cols = $("showPicks").checked ? gameCols(d) : [];
   document.querySelector("#tbl thead tr").innerHTML =
-    "<th>Place</th><th>Entry</th><th>W-L</th><th>TB</th><th>TB diff</th><th>$ won</th><th></th>";
+    `<th class="name">Entry</th><th>W</th><th>TB</th>` + cols.map(x => gameHeader(x.g)).join("") +
+    `<th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th>`;
+  const tb = document.querySelector("#tbl tbody");
+  tb.innerHTML = "";
+  for (const e of d.entries) {
+    const tr = document.createElement("tr");
+    if (e.ev >= d.payouts[d.payouts.length - 1]) tr.className = "money";
+    const p = e.p_place;
+    tr.innerHTML = `<td class="name">${e.handle}</td><td>${e.wins}</td><td>${e.tb ?? "–"}</td>` +
+      cols.map(x => pickCell(x.g, e.picks ? e.picks[x.i] : null)).join("") +
+      `<td>${pct(p[0])}</td><td>${pct(p[1])}</td><td>${pct(p[2])}</td><td>${pct(p[3])}</td>` +
+      `<td>$${e.ev.toFixed(2)}</td>` +
+      `<td class="name"><span class="bar" style="width:${Math.round(e.ev / d.payouts[0] * 60)}px"></span></td>`;
+    tb.appendChild(tr);
+  }
+  const open = d.games.filter(g => g.status !== "final");
+  const done = d.games.filter(g => g.status === "final");
+  $("games").innerHTML =
+    (open.length ? "<b>Open:</b> " + open.map(g =>
+      `${g.name}${g.live ? ' <span class="live">LIVE</span>' : ""} (${g.home} ${pct(g.p_home)})`).join(" · ") + "<br>" : "") +
+    (done.length ? "<b>Final:</b> " + done.map(g => `${g.name}: ${g.winner}`).join(" · ") : "");
+}
+
+function renderFinal(d) {
+  $("sub").textContent = `Week ${d.week} — FINAL · actual MNF total ${d.tb_total} · $${d.pot} pot`;
+  const cols = $("showPicks").checked ? gameCols(d) : [];
+  document.querySelector("#tbl thead tr").innerHTML =
+    `<th>Place</th><th class="name">Entry</th><th>W-L</th><th>TB</th><th>TB diff</th>` +
+    cols.map(x => gameHeader(x.g)).join("") + `<th>$ won</th><th></th>`;
   const tb = document.querySelector("#tbl tbody");
   tb.innerHTML = "";
   for (const e of d.entries) {
     const tr = document.createElement("tr");
     if (e.won > 0) tr.className = "money";
-    tr.innerHTML = `<td>${e.place ?? "–"}</td><td style="text-align:left">${e.handle}</td>` +
+    tr.innerHTML = `<td>${e.place ?? "–"}</td><td class="name">${e.handle}</td>` +
       `<td>${e.wins}-${e.losses}</td><td>${e.tb ?? "–"}</td><td>${e.td ?? "–"}</td>` +
+      cols.map(x => pickCell(x.g, e.picks ? e.picks[x.i] : null)).join("") +
       `<td>${e.won ? "$" + e.won.toFixed(2) : "–"}</td>` +
-      `<td style="text-align:left"><span class="bar" style="width:${Math.round(e.won / d.payouts[0] * 60)}px"></span></td>`;
+      `<td class="name"><span class="bar" style="width:${Math.round(e.won / d.payouts[0] * 60)}px"></span></td>`;
     tb.appendChild(tr);
   }
-  document.getElementById("games").innerHTML =
-    "<b>Results:</b> " + d.games.map(g => `${g.name}: ${g.winner}`).join(" · ");
+  $("games").innerHTML = "<b>Results:</b> " + d.games.map(g => `${g.name}: ${g.winner}`).join(" · ");
 }
+
 async function load() {
   try {
-    const sel = document.getElementById("wk");
+    const sel = $("wk");
     const pick = sel.options.length ? sel.value : "live";
     if (pick !== "live") {
       renderFinal(await (await fetch(`week_${pick}.json?t=` + Date.now())).json());
@@ -76,33 +135,13 @@ async function load() {
     }
     const d = await (await fetch("data.json?t=" + Date.now())).json();
     fillDropdown(d);
-    document.querySelector("#tbl thead tr").innerHTML =
-      "<th>Entry</th><th>W</th><th>TB</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th>";
-    const when = new Date(d.updated).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"});
-    document.getElementById("sub").textContent =
-      `Week ${d.week} · $${d.pot} pot ($${d.payouts.join(" / $")}) · updated ${when}`;
-    const tb = document.querySelector("#tbl tbody");
-    tb.innerHTML = "";
-    for (const e of d.entries) {
-      const tr = document.createElement("tr");
-      if (e.ev >= d.payouts[d.payouts.length - 1]) tr.className = "money";
-      const p = e.p_place;
-      tr.innerHTML = `<td style="text-align:left">${e.handle}</td><td>${e.wins}</td><td>${e.tb ?? "–"}</td>` +
-        `<td>${pct(p[0])}</td><td>${pct(p[1])}</td><td>${pct(p[2])}</td><td>${pct(p[3])}</td>` +
-        `<td>$${e.ev.toFixed(2)}</td>` +
-        `<td style="text-align:left"><span class="bar" style="width:${Math.round(e.ev / d.payouts[0] * 60)}px"></span></td>`;
-      tb.appendChild(tr);
-    }
-    const open = d.games.filter(g => g.status !== "final");
-    const done = d.games.filter(g => g.status === "final");
-    document.getElementById("games").innerHTML =
-      (open.length ? "<b>Open:</b> " + open.map(g =>
-        `${g.name}${g.live ? ' <span class="live">LIVE</span>' : ""} (home ${pct(g.p_home)})`).join(" · ") + "<br>" : "") +
-      (done.length ? "<b>Final:</b> " + done.map(g => `${g.name}: ${g.winner}`).join(" · ") : "");
+    renderLive(d);
   } catch (e) {
-    document.getElementById("sub").textContent = "failed to load data.json — " + e;
+    $("sub").textContent = "failed to load data — " + e;
   }
 }
+$("showPicks").onchange = load;
+$("hideDone").onchange = load;
 load();
 setInterval(load, 120 * 1000);
 </script>
