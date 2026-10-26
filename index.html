@@ -29,8 +29,10 @@
 </thead><tbody></tbody></table>
 <div class="games" id="games"></div>
 <footer>Simulated from betting-market win probabilities (live during games).
-Ties shown as split money; the real tiebreaker is the Monday-total guess.
-Refreshes automatically.</footer>
+Note on ties: the projection splits tied places evenly (a two-way tie for 1st
+counts as half of 1st and half of 2nd for each entry). It does not use or
+simulate the actual Monday point total — in reality a tie is won outright by
+whoever's TB guess is closest. Refreshes automatically.</footer>
 <script>
 const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";
 async function load() {
