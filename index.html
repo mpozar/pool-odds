@@ -71,7 +71,7 @@ function fillDropdown(d) {
   const sel = $("wk");
   if (sel.options.length) return;
   weeks = d.past_weeks || [];
-  sel.add(new Option(`Week ${d.week} (live)`, "live"));
+  sel.add(new Option(`Week ${d.week} ${d.final ? "(final)" : "(live)"}`, "live"));
   for (const n of [...weeks].reverse()) sel.add(new Option(`Week ${n} (final)`, n));
   sel.onchange = load;
 }
@@ -135,7 +135,7 @@ async function load() {
     }
     const d = await (await fetch("data.json?t=" + Date.now())).json();
     fillDropdown(d);
-    renderLive(d);
+    if (d.final) renderFinal(d); else renderLive(d);
   } catch (e) {
     $("sub").textContent = "failed to load data — " + e;
   }
