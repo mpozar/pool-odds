@@ -77,23 +77,25 @@ function fillDropdown(d) {
 }
 
 function renderLive(d) {
+  const sim = d.sim !== false; // placement odds only once every pick is visible
   const when = new Date(d.updated).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"});
-  $("sub").textContent = `Week ${d.week} · $${d.pot} pot ($${d.payouts.join(" / $")}) · updated ${when}`;
+  $("sub").textContent = `Week ${d.week} · $${d.pot} pot ($${d.payouts.join(" / $")}) · updated ${when}` +
+    (sim ? "" : " · placement odds appear once all picks lock");
   const cols = $("showPicks").checked ? gameCols(d) : [];
   document.querySelector("#tbl thead tr").innerHTML =
     `<th class="name">Entry</th><th>W</th><th>TB</th>` + cols.map(x => gameHeader(x.g)).join("") +
-    `<th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th>`;
+    (sim ? `<th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th>` : "");
   const tb = document.querySelector("#tbl tbody");
   tb.innerHTML = "";
   for (const e of d.entries) {
     const tr = document.createElement("tr");
-    if (e.ev >= d.payouts[d.payouts.length - 1]) tr.className = "money";
+    if (sim && e.ev >= d.payouts[d.payouts.length - 1]) tr.className = "money";
     const p = e.p_place;
     tr.innerHTML = `<td class="name">${e.handle}</td><td>${e.wins}</td><td>${e.tb ?? "–"}</td>` +
       cols.map(x => pickCell(x.g, e.picks ? e.picks[x.i] : null)).join("") +
-      `<td>${pct(p[0])}</td><td>${pct(p[1])}</td><td>${pct(p[2])}</td><td>${pct(p[3])}</td>` +
+      (sim ? `<td>${pct(p[0])}</td><td>${pct(p[1])}</td><td>${pct(p[2])}</td><td>${pct(p[3])}</td>` +
       `<td>$${e.ev.toFixed(2)}</td>` +
-      `<td class="name"><span class="bar" style="width:${Math.round(e.ev / d.payouts[0] * 60)}px"></span></td>`;
+      `<td class="name"><span class="bar" style="width:${Math.round(e.ev / d.payouts[0] * 60)}px"></span></td>` : "");
     tb.appendChild(tr);
   }
   const open = d.games.filter(g => g.status !== "final");
