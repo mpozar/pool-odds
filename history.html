@@ -21,13 +21,24 @@
   .chip { padding: 1px 8px; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
           border-radius: 10px; cursor: pointer; opacity: .6; user-select: none; }
   .chip.on { opacity: 1; font-weight: 600; border-width: 2px; }
-  .games { margin: 10px 0; font-size: .82rem; opacity: .9; line-height: 1.7; }
+  .games { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .card { display: flex; align-items: center; gap: 9px; padding: 5px 9px; border-radius: 7px;
+          border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); }
+  .sb { display: grid; grid-template-columns: auto auto; column-gap: 9px; font-size: .8rem; }
+  .sb .tm { display: contents; }
+  .sb b { text-align: right; font-weight: 600; }
+  .tm.win > * { color: #3f9e4d; font-weight: 700; }
+  .st { font-size: .7rem; opacity: .8; min-width: 54px; line-height: 1.35; }
   .live { color: #c2443c; font-weight: 700; }
   .scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: .9rem; white-space: nowrap; }
   th, td { padding: 4px 7px; text-align: right; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
   th { font-weight: 600; opacity: .75; font-size: .76rem; }
   td.name, th.name { text-align: left; }
+  td.pk { font-size: .72rem; padding: 2px 4px; text-align: center; }
+  th.pk { font-size: .64rem; padding: 2px 3px; text-align: center; line-height: 1.25; }
+  td.ok  { background: color-mix(in srgb, #3f9e4d 28%, transparent); }
+  td.bad { background: color-mix(in srgb, #c2443c 24%, transparent); }
   .up { color: #3f9e4d; } .down { color: #c2443c; }
   footer { margin-top: 18px; font-size: .75rem; opacity: .5; }
 </style>
@@ -37,6 +48,7 @@
 <div class="controls">
   <div class="sub" id="sub">loading…</div>
   <span style="flex:1"></span>
+  <label><input type="checkbox" id="showPicks"> show picks</label>
   <label><input type="checkbox" id="hideScores" checked> hide scores</label>
   <label><input type="radio" name="metric" value="ev" checked> E$</label>
   <label><input type="radio" name="metric" value="p1"> P(1st)</label>
@@ -58,12 +70,12 @@
 </div>
 <div class="games" id="games"></div>
 <div class="scroll"><table id="tbl">
-  <thead><tr><th>#</th><th class="name">Entry</th><th>W</th><th>E$</th><th>P(1st)</th><th></th></tr></thead>
+  <thead><tr></tr></thead>
   <tbody></tbody></table></div>
 <footer>Snapshots are taken every few minutes while games are in progress, starting when all
 picks become visible at Sunday lock. E$ is each entry's expected winnings at that moment
-(ties split evenly); P(1st) is the chance of finishing first. The arrows show rank movement
-over the last few snapshots. Scores stay hidden until you uncheck "hide scores".</footer>
+(ties split evenly); P(1st) is the chance of finishing first. Scores stay hidden until you
+uncheck "hide scores".</footer>
 <script>
 const $ = id => document.getElementById(id);
 const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";
@@ -143,12 +155,17 @@ function renderLegend() {
 function renderGames() {
   const hide = $("hideScores").checked, r = hist.rows[cur];
   $("games").innerHTML = hist.games.map((name, i) => {
-    const [rs, hs, wp, st] = r.g[i], home = name.split("@")[1];
-    const score = hide ? "" : ` ${rs}–${hs}`;
-    if (st === 2) return `${name}: final${score}`;
-    if (st === 1) return `${name}${score} (${home} ${pct(wp)}) <span class="live">LIVE</span>`;
-    return `${name} (${home} ${wp != null ? pct(wp) : "–"})`;
-  }).join(" · ");
+    const [rs, hs, wp, st] = r.g[i], [road, home] = name.split("@");
+    const sc = v => hide ? "–" : (v ?? "–");
+    const winR = !hide && st === 2 && rs > hs, winH = !hide && st === 2 && hs > rs;
+    const right = st === 2 ? "final"
+      : st === 1 ? `${home} ${pct(wp)}<br><span class="live">LIVE</span>`
+      : (wp != null ? `${home} ${pct(wp)}` : "–");
+    return `<div class="card"><div class="sb">` +
+      `<div class="tm${winR ? " win" : ""}"><span>${road}</span><b>${sc(rs)}</b></div>` +
+      `<div class="tm${winH ? " win" : ""}"><span>${home}</span><b>${sc(hs)}</b></div>` +
+      `</div><div class="st">${right}</div></div>`;
+  }).join("");
 }
 
 function ranksAt(i, m) {
@@ -158,13 +175,28 @@ function ranksAt(i, m) {
 
 function renderTable() {
   const r = hist.rows[cur];
-  const rk = ranksAt(cur, "ev"), rkPrev = ranksAt(Math.max(0, cur - 3), "ev");
+  const showP = $("showPicks").checked && hist.picks;
+  const rk = ranksAt(cur, "ev");
+  // winner of each game as of the cursor's moment (grades fill in as the replay runs)
+  const win = hist.games.map((name, gi) => {
+    const [rs, hs, , st] = r.g[gi];
+    if (st !== 2) return null;
+    const [road, home] = name.split("@");
+    return rs > hs ? road : hs > rs ? home : "TIE";
+  });
+  document.querySelector("#tbl thead tr").innerHTML =
+    `<th>#</th><th class="name">Entry</th><th>W</th>` +
+    (showP ? hist.games.map(n => `<th class="pk">${n.split("@").join("<br>")}</th>`).join("") : "") +
+    `<th>E$</th><th>P(1st)</th>`;
   const order = hist.entries.map((h, i) => i).sort((a, b) => r.ev[b] - r.ev[a] || r.w[b] - r.w[a]);
   document.querySelector("#tbl tbody").innerHTML = order.map(i => {
-    const mv = rkPrev[i] - rk[i];
-    const arrow = mv > 0 ? `<span class="up">▲${mv}</span>` : mv < 0 ? `<span class="down">▼${-mv}</span>` : "";
-    return `<tr><td>${rk[i]}</td><td class="name">${hist.entries[i]}</td><td>${r.w[i]}</td>` +
-      `<td>$${r.ev[i].toFixed(2)}</td><td>${pct(r.p1[i])}</td><td>${arrow}</td></tr>`;
+    const picks = showP ? hist.picks[i].map((p, gi) => {
+      let cls = "pk";
+      if (p && win[gi] && win[gi] !== "TIE") cls += p === win[gi] ? " ok" : " bad";
+      return `<td class="${cls}">${p || "–"}</td>`;
+    }).join("") : "";
+    return `<tr><td>${rk[i]}</td><td class="name">${hist.entries[i]}</td><td>${r.w[i]}</td>` + picks +
+      `<td>$${r.ev[i].toFixed(2)}</td><td>${pct(r.p1[i])}</td></tr>`;
   }).join("");
 }
 
@@ -196,6 +228,7 @@ async function loadWeek(w) {
   stop();
   try {
     hist = await (await fetch(`history_${w}.json?t=` + Date.now())).json();
+    highlighted = new Set(hist.entries);
     cur = hist.rows.length - 1;
     render();
   } catch (e) { $("sub").textContent = "failed to load history — " + e; }
@@ -221,6 +254,7 @@ $("btnBack").onclick = () => { stop(); cur = Math.max(0, cur - 1); render(); };
 $("btnFwd").onclick = () => { stop(); cur = Math.min(hist.rows.length - 1, cur + 1); render(); };
 $("scrub").oninput = e => { stop(); cur = +e.target.value; render(); };
 $("hideScores").onchange = () => render();
+$("showPicks").onchange = () => render();
 for (const r of document.querySelectorAll('input[name=metric]')) r.onchange = () => render();
 // while the current week is still recording, pull new snapshots every 2 min
 setInterval(async () => {
