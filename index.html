@@ -18,8 +18,8 @@
   th small { display: block; font-weight: 400; opacity: .8; }
   td.name, th.name { text-align: left; }
   td.pick { text-align: center; font-size: .82rem; }
-  td.ok  { background: color-mix(in srgb, #2e8540 38%, transparent); }
-  td.bad { background: color-mix(in srgb, #b0342a 34%, transparent); }
+  td.ok  { background: color-mix(in srgb, #2e8540 50%, transparent); }
+  td.bad { background: color-mix(in srgb, #b0342a 45%, transparent); }
   tr.money td { font-weight: 600; }
   .games { margin-top: 16px; font-size: .85rem; opacity: .85; line-height: 1.7; }
   .live { color: #c2443c; font-weight: 700; }
@@ -69,7 +69,7 @@ function pickCell(g, pick) {
     // out with certainty so 100%/0% matches the final ok/bad colors exactly
     const pp = pick === g.home ? g.p_home : 1 - g.p_home;
     const str = Math.abs(pp - 0.5) * 2;
-    const a = (str * (pp >= 0.5 ? 38 : 34)).toFixed(1);
+    const a = (str * (pp >= 0.5 ? 50 : 45)).toFixed(1);
     const gr = ((1 - str) * 8).toFixed(1);
     sty = ` style="background:color-mix(in srgb, ${pp >= 0.5 ? "#2e8540" : "#b0342a"} ${a}%, color-mix(in srgb, CanvasText ${gr}%, transparent))"`;
   }

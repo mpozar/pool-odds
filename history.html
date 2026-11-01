@@ -41,8 +41,8 @@
   td.name, th.name { text-align: left; }
   td.pk { font-size: .72rem; padding: 2px 4px; text-align: center; }
   th.pk { font-size: .64rem; padding: 2px 3px; text-align: center; line-height: 1.25; }
-  td.ok  { background: color-mix(in srgb, #2e8540 38%, transparent); }
-  td.bad { background: color-mix(in srgb, #b0342a 34%, transparent); }
+  td.ok  { background: color-mix(in srgb, #2e8540 50%, transparent); }
+  td.bad { background: color-mix(in srgb, #b0342a 45%, transparent); }
   .up { color: #3f9e4d; } .down { color: #c2443c; }
   footer { margin-top: 26px; font-size: .75rem; opacity: .5; }
 </style>
@@ -259,7 +259,7 @@ function renderTable() {
         // out with certainty so 100%/0% matches the final ok/bad colors exactly
         const pp = p === hist.games[gi].split("@")[1] ? wp : 1 - wp;
         const str = Math.abs(pp - 0.5) * 2;
-        const a = (str * (pp >= 0.5 ? 38 : 34)).toFixed(1);
+        const a = (str * (pp >= 0.5 ? 50 : 45)).toFixed(1);
         const gr = ((1 - str) * 8).toFixed(1);
         sty = ` style="background:color-mix(in srgb, ${pp >= 0.5 ? "#2e8540" : "#b0342a"} ${a}%, color-mix(in srgb, CanvasText ${gr}%, transparent))"`;
       }
