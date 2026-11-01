@@ -246,7 +246,7 @@ function renderTable() {
   });
   document.querySelector("#tbl thead tr").innerHTML =
     `<th>#</th><th class="name">Entry</th><th>W</th>` +
-    (showP ? hist.games.map(n => `<th class="pk">${n.split("@").join("<br>")}</th>`).join("") : "") +
+    (showP ? hist.games.map((n, gi) => `<th class="pk"${r.g[gi][3] === 1 ? ' style="color:#c2443c"' : ""}>${n.split("@").join("<br>")}</th>`).join("") : "") +
     `<th>TB</th><th>E$</th><th>P(1st)</th>`;
   const order = hist.entries.map((h, i) => i).sort((a, b) => r.ev[b] - r.ev[a] || r.w[b] - r.w[a]);
   document.querySelector("#tbl tbody").innerHTML = order.map(i => {
