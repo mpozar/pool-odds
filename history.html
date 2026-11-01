@@ -114,7 +114,7 @@ function drawChart() {
     return;
   }
   const rows = hist.rows, m = metric();
-  const W = 960, H = 340, L = 46, R = 8, T = 10, B = 26;
+  const W = 960, H = 340, L = 46, R = 30, T = 10, B = 26;
   const {u, brk} = xUnits(rows);
   const umax = u[u.length - 1] || 1;
   const ymax = Math.max(...rows.flatMap(r => r[m])) * 1.06 || 1;
@@ -138,9 +138,12 @@ function drawChart() {
       ticks.push({pos: u[i - 1] + (T - t0) / (t1 - t0) * (u[i] - u[i - 1]), T});
   }
   const tstep = Math.max(1, Math.ceil(ticks.length / 7));
-  const label = k =>
-    `<text x="${Xu(ticks[k].pos)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="CanvasText" opacity=".6">` +
-    new Date(ticks[k].T).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  const label = k => {
+    const x = Xu(ticks[k].pos).toFixed(1);
+    return `<line x1="${x}" x2="${x}" y1="${H - B}" y2="${H - B + 5}" stroke="CanvasText" opacity=".5"/>` +
+      `<text x="${x}" y="${H - 8}" text-anchor="middle" font-size="10" fill="CanvasText" opacity=".6">` +
+      new Date(ticks[k].T).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  };
   if (ticks.length) {
     const last = ticks.length - 1, minGap = umax / 14;
     for (let k = 0; k < ticks.length; k += tstep)
