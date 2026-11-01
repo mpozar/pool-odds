@@ -155,6 +155,15 @@ function drawChart() {
            stroke="transparent" stroke-width="10" pointer-events="stroke"/>`;
   });
   svg.innerHTML = s;
+  // click anywhere on the chart to snap the replay cursor to the nearest tick
+  svg.onclick = e => {
+    const rc = svg.getBoundingClientRect();
+    const px = (e.clientX - rc.left) / rc.width * W;
+    let best = 0;
+    for (let i = 1; i < rows.length; i++)
+      if (Math.abs(X(i) - px) < Math.abs(X(best) - px)) best = i;
+    stop(); cur = best; render();
+  };
   const tip = $("tip"), box = $("chartbox");
   for (const el of svg.querySelectorAll(".hit")) {
     el.onmousemove = e => {
