@@ -58,12 +58,12 @@
 </div>
 <div class="games" id="games"></div>
 <div class="scroll"><table id="tbl">
-  <thead><tr><th>#</th><th class="name">Entry</th><th>W</th><th>E$</th><th>Δ15m</th><th>P(1st)</th><th></th></tr></thead>
+  <thead><tr><th>#</th><th class="name">Entry</th><th>W</th><th>E$</th><th>P(1st)</th><th></th></tr></thead>
   <tbody></tbody></table></div>
 <footer>Snapshots are taken every few minutes while games are in progress, starting when all
 picks become visible at Sunday lock. E$ is each entry's expected winnings at that moment
 (ties split evenly); P(1st) is the chance of finishing first. The arrows show rank movement
-over the last 15 minutes. Scores stay hidden until you uncheck "hide scores".</footer>
+over the last few snapshots. Scores stay hidden until you uncheck "hide scores".</footer>
 <script>
 const $ = id => document.getElementById(id);
 const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";
@@ -157,15 +157,14 @@ function ranksAt(i, m) {
 }
 
 function renderTable() {
-  const m = metric(), r = hist.rows[cur], prev = hist.rows[Math.max(0, cur - 3)];
+  const r = hist.rows[cur];
   const rk = ranksAt(cur, "ev"), rkPrev = ranksAt(Math.max(0, cur - 3), "ev");
   const order = hist.entries.map((h, i) => i).sort((a, b) => r.ev[b] - r.ev[a] || r.w[b] - r.w[a]);
   document.querySelector("#tbl tbody").innerHTML = order.map(i => {
-    const d = r.ev[i] - prev.ev[i], mv = rkPrev[i] - rk[i];
+    const mv = rkPrev[i] - rk[i];
     const arrow = mv > 0 ? `<span class="up">▲${mv}</span>` : mv < 0 ? `<span class="down">▼${-mv}</span>` : "";
     return `<tr><td>${rk[i]}</td><td class="name">${hist.entries[i]}</td><td>${r.w[i]}</td>` +
-      `<td>$${r.ev[i].toFixed(2)}</td><td class="${d > 0.005 ? "up" : d < -0.005 ? "down" : ""}">` +
-      `${cur ? (d >= 0 ? "+" : "") + d.toFixed(2) : "–"}</td><td>${pct(r.p1[i])}</td><td>${arrow}</td></tr>`;
+      `<td>$${r.ev[i].toFixed(2)}</td><td>${pct(r.p1[i])}</td><td>${arrow}</td></tr>`;
   }).join("");
 }
 
