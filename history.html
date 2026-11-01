@@ -323,8 +323,23 @@ $("btnEnd").onclick = () => { stop(); cur = hist.rows.length - 1; render(); };
 $("btnBack").onclick = () => { stop(); cur = Math.max(0, cur - 1); render(); };
 $("btnFwd").onclick = () => { stop(); cur = Math.min(hist.rows.length - 1, cur + 1); render(); };
 $("scrub").oninput = e => { stop(); cur = +e.target.value; render(); };
-$("hideScores").onchange = () => render();
-$("showPicks").onchange = () => render();
+// remember toggle state in this browser between visits
+function loadPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem("poolodds.replay") || "{}");
+    if ("showPicks" in p) $("showPicks").checked = p.showPicks;
+    if ("hideScores" in p) $("hideScores").checked = p.hideScores;
+  } catch (e) {}
+}
+function savePrefs() {
+  try {
+    localStorage.setItem("poolodds.replay", JSON.stringify(
+      {showPicks: $("showPicks").checked, hideScores: $("hideScores").checked}));
+  } catch (e) {}
+}
+$("hideScores").onchange = () => { savePrefs(); render(); };
+$("showPicks").onchange = () => { savePrefs(); render(); };
+loadPrefs();
 for (const r of document.querySelectorAll('input[name=metric]')) r.onchange = () => render();
 // while the current week is still recording, pull new snapshots every 2 min
 setInterval(async () => {

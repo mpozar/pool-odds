@@ -152,8 +152,23 @@ async function load() {
     $("sub").textContent = "failed to load data — " + e;
   }
 }
-$("showPicks").onchange = load;
-$("hideDone").onchange = load;
+// remember toggle state in this browser between visits
+function loadPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem("poolodds.live") || "{}");
+    if ("showPicks" in p) $("showPicks").checked = p.showPicks;
+    if ("hideDone" in p) $("hideDone").checked = p.hideDone;
+  } catch (e) {}
+}
+function savePrefs() {
+  try {
+    localStorage.setItem("poolodds.live", JSON.stringify(
+      {showPicks: $("showPicks").checked, hideDone: $("hideDone").checked}));
+  } catch (e) {}
+}
+$("showPicks").onchange = () => { savePrefs(); load(); };
+$("hideDone").onchange = () => { savePrefs(); load(); };
+loadPrefs();
 load();
 setInterval(load, 120 * 1000);
 </script>
