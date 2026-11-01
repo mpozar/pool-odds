@@ -17,6 +17,9 @@
   .replay button { font-size: .9rem; padding: 3px 10px; cursor: pointer; }
   .replay input[type=range] { flex: 1; min-width: 160px; }
   #chartbox { position: relative; margin: 6px 0 4px; }
+  #tip { position: absolute; display: none; pointer-events: none; background: Canvas;
+         border: 1px solid color-mix(in srgb, CanvasText 30%, transparent); border-radius: 5px;
+         padding: 2px 8px; font-size: .75rem; white-space: nowrap; }
   svg { width: 100%; height: auto; display: block; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; font-size: .76rem; }
   .chip { padding: 1px 8px; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
@@ -56,7 +59,7 @@
   <label><input type="radio" name="metric" value="p1"> P(1st)</label>
   <select id="wk" style="font-size:.9rem"></select>
 </div>
-<div id="chartbox"><svg id="chart" viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div id="chartbox"><svg id="chart" viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></div>
 <div class="legend" id="legend"></div>
 <div class="viewopts">
   <label><input type="checkbox" id="showPicks"> show picks</label>
@@ -136,8 +139,8 @@ function drawChart() {
          `<text x="${Xu(b.at)}" y="${T + 10}" text-anchor="middle" font-size="9" fill="CanvasText" opacity=".55">` +
          new Date(b.label).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"}) + `</text>`;
   // lines: muted for everyone, colored + thick for highlighted
-  const line = (ei, css) => `<polyline fill="none" points="` +
-    rows.map((r, i) => `${X(i).toFixed(1)},${Y(r[m][ei]).toFixed(1)}`).join(" ") + `" ${css}/>`;
+  const pts = ei => rows.map((r, i) => `${X(i).toFixed(1)},${Y(r[m][ei]).toFixed(1)}`).join(" ");
+  const line = (ei, css) => `<polyline class="ln" data-h="${hist.entries[ei]}" fill="none" points="${pts(ei)}" ${css}/>`;
   hist.entries.forEach((h, ei) => {
     if (!highlighted.has(h)) s += line(ei, `stroke="CanvasText" stroke-width="1" opacity=".22"`);
   });
@@ -146,7 +149,33 @@ function drawChart() {
   });
   // cursor
   s += `<line x1="${X(cur)}" x2="${X(cur)}" y1="${T}" y2="${H - B}" stroke="#c2443c" stroke-width="1.5" opacity=".8"/>`;
+  // invisible fat twins on top for easy hovering
+  hist.entries.forEach((h, ei) => {
+    s += `<polyline class="hit" data-h="${h}" fill="none" points="${pts(ei)}"
+           stroke="transparent" stroke-width="10" pointer-events="stroke"/>`;
+  });
   svg.innerHTML = s;
+  const tip = $("tip"), box = $("chartbox");
+  for (const el of svg.querySelectorAll(".hit")) {
+    el.onmousemove = e => {
+      const rc = box.getBoundingClientRect();
+      tip.textContent = el.dataset.h;
+      tip.style.left = (e.clientX - rc.left + 12) + "px";
+      tip.style.top = (e.clientY - rc.top - 26) + "px";
+      tip.style.display = "block";
+      for (const ln of svg.querySelectorAll(`.ln`))
+        if (ln.dataset.h === el.dataset.h) { ln.setAttribute("stroke-width", "3.4"); ln.setAttribute("opacity", "1"); }
+    };
+    el.onmouseleave = () => {
+      tip.style.display = "none";
+      for (const ln of svg.querySelectorAll(`.ln`))
+        if (ln.dataset.h === el.dataset.h) {
+          const hl = highlighted.has(el.dataset.h);
+          ln.setAttribute("stroke-width", hl ? "2.4" : "1");
+          ln.setAttribute("opacity", hl ? "1" : ".22");
+        }
+    };
+  }
 }
 
 function renderLegend() {
