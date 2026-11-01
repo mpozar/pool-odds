@@ -191,9 +191,16 @@ function renderTable() {
   const order = hist.entries.map((h, i) => i).sort((a, b) => r.ev[b] - r.ev[a] || r.w[b] - r.w[a]);
   document.querySelector("#tbl tbody").innerHTML = order.map(i => {
     const picks = showP ? hist.picks[i].map((p, gi) => {
-      let cls = "pk";
+      let cls = "pk", sty = "";
+      const [, , wp, st] = r.g[gi];
       if (p && win[gi] && win[gi] !== "TIE") cls += p === win[gi] ? " ok" : " bad";
-      return `<td class="${cls}">${p || "–"}</td>`;
+      else if (p && st === 1 && wp != null) {
+        // live: shade by the pick's current win probability (gray at 50/50)
+        const pp = p === hist.games[gi].split("@")[1] ? wp : 1 - wp;
+        const a = (Math.abs(pp - 0.5) * 2 * 28).toFixed(0);
+        sty = ` style="background:color-mix(in srgb, ${pp >= 0.5 ? "#3f9e4d" : "#c2443c"} ${a}%, color-mix(in srgb, CanvasText 8%, transparent))"`;
+      }
+      return `<td class="${cls}"${sty}>${p || "–"}</td>`;
     }).join("") : "";
     return `<tr><td>${rk[i]}</td><td class="name">${hist.entries[i]}</td><td>${r.w[i]}</td>` + picks +
       `<td>$${r.ev[i].toFixed(2)}</td><td>${pct(r.p1[i])}</td></tr>`;
