@@ -298,7 +298,10 @@ async function loadWeek(w) {
   stop();
   try {
     hist = await (await fetch(`history_${w}.json?t=` + Date.now())).json();
-    highlighted = new Set(hist.entries);
+    // start with the top 10 entries by current E$ selected
+    const last = hist.rows[hist.rows.length - 1];
+    highlighted = new Set(last ? hist.entries.map((h, i) => [last.ev[i], h])
+      .sort((a, b) => b[0] - a[0]).slice(0, 10).map(x => x[1]) : hist.entries);
     cur = hist.rows.length - 1;
     render();
   } catch (e) { $("sub").textContent = "failed to load history — " + e; }
