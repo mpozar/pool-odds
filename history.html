@@ -138,9 +138,15 @@ function drawChart() {
       ticks.push({pos: u[i - 1] + (T - t0) / (t1 - t0) * (u[i] - u[i - 1]), T});
   }
   const tstep = Math.max(1, Math.ceil(ticks.length / 7));
-  for (let k = 0; k < ticks.length; k += tstep)
-    s += `<text x="${Xu(ticks[k].pos)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="CanvasText" opacity=".6">` +
-         new Date(ticks[k].T).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  const label = k =>
+    `<text x="${Xu(ticks[k].pos)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="CanvasText" opacity=".6">` +
+    new Date(ticks[k].T).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  if (ticks.length) {
+    const last = ticks.length - 1, minGap = umax / 14;
+    for (let k = 0; k < ticks.length; k += tstep)
+      if (ticks[last].pos - ticks[k].pos > minGap) s += label(k);
+    s += label(last); // the rightmost mark always gets its label
+  }
   for (const b of brk)
     s += `<line x1="${Xu(b.at)}" x2="${Xu(b.at)}" y1="${T}" y2="${H - B}" stroke="CanvasText" opacity=".3" stroke-dasharray="3,4"/>` +
          `<text x="${Xu(b.at)}" y="${T + 10}" text-anchor="middle" font-size="9" fill="CanvasText" opacity=".55">` +
