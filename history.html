@@ -8,20 +8,21 @@
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 980px;
          padding: 16px; background: Canvas; color: CanvasText; }
-  h1 { font-size: 1.25rem; margin: 0 0 2px; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
   a { color: inherit; }
   .sub { opacity: .65; font-size: .85rem; }
-  .controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 8px 0 10px; font-size: .85rem; }
-  .replay { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 10px; font-size: .85rem; }
-  .replay button { font-size: .9rem; padding: 2px 9px; cursor: pointer; }
+  .controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 10px 0 16px; font-size: .85rem; }
+  .viewopts { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin: 14px 0; font-size: .85rem; opacity: .9; }
+  .replay { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0; font-size: .85rem; }
+  .replay button { font-size: .9rem; padding: 3px 10px; cursor: pointer; }
   .replay input[type=range] { flex: 1; min-width: 160px; }
-  #chartbox { position: relative; }
+  #chartbox { position: relative; margin: 6px 0 4px; }
   svg { width: 100%; height: auto; display: block; }
-  .legend { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; font-size: .76rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; font-size: .76rem; }
   .chip { padding: 1px 8px; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
           border-radius: 10px; cursor: pointer; opacity: .6; user-select: none; }
   .chip.on { opacity: 1; font-weight: 600; border-width: 2px; }
-  .games { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .games { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
   .card { display: flex; align-items: center; gap: 9px; padding: 5px 9px; border-radius: 7px;
           border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); }
   .sb { display: grid; grid-template-columns: auto auto; column-gap: 9px; font-size: .8rem; }
@@ -30,7 +31,7 @@
   .tm.win > * { color: #3f9e4d; font-weight: 700; }
   .st { font-size: .7rem; opacity: .8; min-width: 54px; line-height: 1.35; }
   .live { color: #c2443c; font-weight: 700; }
-  .scroll { overflow-x: auto; }
+  .scroll { overflow-x: auto; margin-top: 18px; }
   table { border-collapse: collapse; width: 100%; font-size: .9rem; white-space: nowrap; }
   th, td { padding: 4px 7px; text-align: right; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
   th { font-weight: 600; opacity: .75; font-size: .76rem; }
@@ -40,23 +41,27 @@
   td.ok  { background: color-mix(in srgb, #3f9e4d 28%, transparent); }
   td.bad { background: color-mix(in srgb, #c2443c 24%, transparent); }
   .up { color: #3f9e4d; } .down { color: #c2443c; }
-  footer { margin-top: 18px; font-size: .75rem; opacity: .5; }
+  footer { margin-top: 26px; font-size: .75rem; opacity: .5; }
 </style>
 </head>
 <body>
-<h1>History &amp; Replay</h1>
+<div style="display:flex; align-items:baseline; gap:16px">
+  <h1>History &amp; Replay</h1>
+  <a href="./" style="font-size:.85rem; opacity:.75">← live odds</a>
+</div>
 <div class="controls">
   <div class="sub" id="sub">loading…</div>
   <span style="flex:1"></span>
-  <label><input type="checkbox" id="showPicks"> show picks</label>
-  <label><input type="checkbox" id="hideScores" checked> hide scores</label>
   <label><input type="radio" name="metric" value="ev" checked> E$</label>
   <label><input type="radio" name="metric" value="p1"> P(1st)</label>
   <select id="wk" style="font-size:.9rem"></select>
-  <a href="./">← live odds</a>
 </div>
 <div id="chartbox"><svg id="chart" viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg"></svg></div>
 <div class="legend" id="legend"></div>
+<div class="viewopts">
+  <label><input type="checkbox" id="showPicks"> show picks</label>
+  <label><input type="checkbox" id="hideScores" checked> hide scores</label>
+</div>
 <div class="replay">
   <button id="btnStart" title="jump to start">⏮</button>
   <button id="btnBack" title="step back">‹</button>
