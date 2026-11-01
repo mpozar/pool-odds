@@ -129,11 +129,18 @@ function drawChart() {
          `<text x="${L - 5}" y="${Y(v) + 4}" text-anchor="end" font-size="10" fill="CanvasText" opacity=".6">` +
          (m === "ev" ? "$" + v.toFixed(0) : (v * 100).toFixed(0) + "%") + `</text>`;
   }
-  // time labels (~7) and gap dividers
-  const step = Math.max(1, Math.ceil(rows.length / 7));
-  for (let i = 0; i < rows.length; i += step)
-    s += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="CanvasText" opacity=".6">` +
-         new Date(rows[i].t).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  // time labels on round 5-minute marks, placed by interpolating between snapshots
+  const ticks = [];
+  for (let i = 1; i < rows.length; i++) {
+    const t0 = +new Date(rows[i - 1].t), t1 = +new Date(rows[i].t);
+    if ((t1 - t0) / 1000 > GAP_S) continue; // gaps get their own divider labels
+    for (let T = Math.ceil(t0 / 300000) * 300000; T <= t1; T += 300000)
+      ticks.push({pos: u[i - 1] + (T - t0) / (t1 - t0) * (u[i] - u[i - 1]), T});
+  }
+  const tstep = Math.max(1, Math.ceil(ticks.length / 7));
+  for (let k = 0; k < ticks.length; k += tstep)
+    s += `<text x="${Xu(ticks[k].pos)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="CanvasText" opacity=".6">` +
+         new Date(ticks[k].T).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + `</text>`;
   for (const b of brk)
     s += `<line x1="${Xu(b.at)}" x2="${Xu(b.at)}" y1="${T}" y2="${H - B}" stroke="CanvasText" opacity=".3" stroke-dasharray="3,4"/>` +
          `<text x="${Xu(b.at)}" y="${T + 10}" text-anchor="middle" font-size="9" fill="CanvasText" opacity=".55">` +
