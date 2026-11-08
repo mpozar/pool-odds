@@ -150,10 +150,15 @@ function drawChart() {
       if (ticks[last].pos - ticks[k].pos > minGap) s += label(k);
     s += label(last); // the rightmost mark always gets its label
   }
-  for (const b of brk)
-    s += `<line x1="${Xu(b.at)}" x2="${Xu(b.at)}" y1="${T}" y2="${H - B}" stroke="CanvasText" opacity=".3" stroke-dasharray="3,4"/>` +
-         `<text x="${Xu(b.at)}" y="${T + 10}" text-anchor="middle" font-size="9" fill="CanvasText" opacity=".55">` +
+  let lastBx = -1e9, lvl = 0; // stack labels of dividers that sit close together
+  for (const b of brk) {
+    const bx = Xu(b.at);
+    lvl = bx - lastBx < 90 ? lvl + 1 : 0;
+    lastBx = bx;
+    s += `<line x1="${bx}" x2="${bx}" y1="${T}" y2="${H - B}" stroke="CanvasText" opacity=".3" stroke-dasharray="3,4"/>` +
+         `<text x="${bx}" y="${T + 10 + lvl * 11}" text-anchor="middle" font-size="9" fill="CanvasText" opacity=".55">` +
          new Date(b.label).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  }
   // lines: muted for everyone, colored + thick for highlighted
   const pts = ei => rows.map((r, i) => `${X(i).toFixed(1)},${Y(r[m][ei]).toFixed(1)}`).join(" ");
   const line = (ei, css) => `<polyline class="ln" data-h="${hist.entries[ei]}" fill="none" points="${pts(ei)}" ${css}/>`;
