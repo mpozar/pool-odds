@@ -16,7 +16,8 @@
   .replay { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0; font-size: .85rem; }
   .replay button { font-size: .9rem; padding: 3px 10px; cursor: pointer; }
   .replay input[type=range] { flex: 1; min-width: 160px; }
-  summary { cursor: pointer; font-size: .78rem; opacity: .65; user-select: none; }
+  details { margin: 14px 0; }
+  summary { cursor: pointer; font-size: .9rem; opacity: .7; user-select: none; }
   .nav { display: flex; gap: 14px; font-size: .85rem; margin: 4px 0 10px; }
   .nav a { opacity: .7; }
   .nav .here { font-weight: 700; }
@@ -82,6 +83,9 @@
 </details>
 <details id="scorewrap" open>
 <summary>scoreboard</summary>
+<div class="viewopts" style="margin:10px 0 0">
+  <label><input type="checkbox" id="hideScores" checked> hide scores</label>
+</div>
 <div class="games" id="games"></div>
 </details>
 <script>
@@ -95,7 +99,6 @@ for (const [id, key] of [["chartwrap", "chartOpen"], ["scorewrap", "scoreOpen"]]
 </script>
 <div class="viewopts">
   <label><input type="checkbox" id="showPicks"> show picks</label>
-  <label><input type="checkbox" id="hideScores" checked> hide scores</label>
 </div>
 <div class="scroll"><table id="tbl">
   <thead><tr></tr></thead>
