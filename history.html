@@ -16,6 +16,7 @@
   .replay { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0; font-size: .85rem; }
   .replay button { font-size: .9rem; padding: 3px 10px; cursor: pointer; }
   .replay input[type=range] { flex: 1; min-width: 160px; }
+  summary { cursor: pointer; font-size: .78rem; opacity: .65; user-select: none; }
   #chartbox { position: relative; margin: 6px 0 4px; }
   #tip { position: absolute; display: none; pointer-events: none; background: Canvas;
          border: 1px solid color-mix(in srgb, CanvasText 30%, transparent); border-radius: 5px;
@@ -59,8 +60,17 @@
   <label><input type="radio" name="metric" value="p1"> P(1st)</label>
   <select id="wk" style="font-size:.9rem"></select>
 </div>
+<details id="chartwrap" open>
+<summary>chart</summary>
 <div id="chartbox"><svg id="chart" viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></div>
 <div class="legend" id="legend"></div>
+</details>
+<script>
+try { if (localStorage.getItem("chartOpen") === "0") document.getElementById("chartwrap").open = false; } catch (e) {}
+document.getElementById("chartwrap").addEventListener("toggle", e => {
+  try { localStorage.setItem("chartOpen", e.target.open ? "1" : "0"); } catch (err) {}
+});
+</script>
 <div class="viewopts">
   <label><input type="checkbox" id="showPicks"> show picks</label>
   <label><input type="checkbox" id="hideScores" checked> hide scores</label>
