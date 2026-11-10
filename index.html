@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Family Football Pool — Live Odds</title>
+<title>Family Football Pool — Weekly Standings</title>
 <style>
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 980px;
@@ -25,18 +25,20 @@
   .live { color: #c2443c; font-weight: 700; }
   .bar { display: inline-block; height: 9px; background: #4a7dbd; border-radius: 2px; vertical-align: middle; }
   footer { margin-top: 18px; font-size: .75rem; opacity: .5; }
+  .nav { display: flex; gap: 14px; font-size: .85rem; margin: 4px 0 10px; }
+  .nav a { opacity: .7; }
+  .nav .here { font-weight: 700; }
 </style>
 </head>
 <body>
-<h1>Family Football Pool — Live Odds</h1>
+<h1>Family Football Pool — Weekly Standings</h1>
+<nav class="nav"><span class="here">weekly standings</span><a href="season.html">season standings</a><a href="history.html">live odds</a></nav>
 <div class="controls">
   <div class="sub" id="sub">loading…</div>
   <span style="flex:1"></span>
   <label><input type="checkbox" id="showPicks" checked> show picks</label>
   <label><input type="checkbox" id="hideDone" checked> hide finished games</label>
   <select id="wk" style="font-size:.9rem"></select>
-  <a href="history.html" style="color:inherit">history →</a>
-  <a href="season.html" style="color:inherit">season →</a>
 </div>
 <div class="scroll"><table id="tbl"><thead><tr></tr></thead><tbody></tbody></table></div>
 <div class="games" id="games"></div>

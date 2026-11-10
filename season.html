@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Family Football Pool — Season</title>
+<title>Family Football Pool — Season Standings</title>
 <style>
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 980px;
@@ -11,6 +11,9 @@
   h1 { font-size: 1.25rem; margin: 0 0 4px; }
   a { color: inherit; }
   .sub { opacity: .65; font-size: .85rem; margin-bottom: 14px; }
+  .nav { display: flex; gap: 14px; font-size: .85rem; margin: 4px 0 10px; }
+  .nav a { opacity: .7; }
+  .nav .here { font-weight: 700; }
   .scroll { overflow-x: auto; margin-top: 14px; }
   table { border-collapse: collapse; width: 100%; font-size: .88rem; white-space: nowrap; }
   th, td { padding: 4px 8px; text-align: center; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
@@ -24,11 +27,8 @@
 </style>
 </head>
 <body>
-<div style="display:flex; align-items:baseline; gap:16px">
-  <h1>Season</h1>
-  <a href="./" style="font-size:.85rem; opacity:.75">← live odds</a>
-  <a href="history.html" style="font-size:.85rem; opacity:.75">history →</a>
-</div>
+<h1>Season Standings</h1>
+<nav class="nav"><a href="./">weekly standings</a><span class="here">season standings</span><a href="history.html">live odds</a></nav>
 <div class="sub" id="sub">loading…</div>
 <div class="scroll"><table id="tbl"><thead><tr></tr></thead><tbody></tbody></table></div>
 <footer>Each cell: games picked correctly, with the week's finishing place in parentheses.

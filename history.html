@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Family Football Pool — History &amp; Replay</title>
+<title>Family Football Pool — Live Odds &amp; Replay</title>
 <style>
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 980px;
@@ -17,6 +17,9 @@
   .replay button { font-size: .9rem; padding: 3px 10px; cursor: pointer; }
   .replay input[type=range] { flex: 1; min-width: 160px; }
   summary { cursor: pointer; font-size: .78rem; opacity: .65; user-select: none; }
+  .nav { display: flex; gap: 14px; font-size: .85rem; margin: 4px 0 10px; }
+  .nav a { opacity: .7; }
+  .nav .here { font-weight: 700; }
   #chartbox { position: relative; margin: 6px 0 4px; }
   #tip { position: absolute; display: none; pointer-events: none; background: Canvas;
          border: 1px solid color-mix(in srgb, CanvasText 30%, transparent); border-radius: 5px;
@@ -49,11 +52,8 @@
 </style>
 </head>
 <body>
-<div style="display:flex; align-items:baseline; gap:16px">
-  <h1>History &amp; Replay</h1>
-  <a href="./" style="font-size:.85rem; opacity:.75">← live odds</a>
-  <a href="season.html" style="font-size:.85rem; opacity:.75">season →</a>
-</div>
+<h1>Live Odds &amp; Replay</h1>
+<nav class="nav"><a href="./">weekly standings</a><a href="season.html">season standings</a><span class="here">live odds</span></nav>
 <div class="controls">
   <div class="sub" id="sub">loading…</div>
   <span style="flex:1"></span>
