@@ -29,7 +29,8 @@
   .chip { padding: 1px 8px; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
           border-radius: 10px; cursor: pointer; opacity: .6; user-select: none; }
   .chip.on { opacity: 1; font-weight: 600; border-width: 2px; }
-  .chip.util { font-style: italic; border-style: dashed; }
+  .chip.util { opacity: 1; font-weight: 600; border-width: 2px;
+               background: color-mix(in srgb, CanvasText 10%, transparent); }
   .games { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
   .card { display: flex; align-items: center; gap: 9px; padding: 5px 9px; border-radius: 7px;
           border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); }
@@ -78,13 +79,19 @@
   <input type="range" id="scrub" min="0" max="0" value="0" step="1">
   <span id="tlabel" class="sub"></span>
 </div>
+</details>
+<details id="scorewrap" open>
+<summary>scoreboard</summary>
 <div class="games" id="games"></div>
 </details>
 <script>
-try { if (localStorage.getItem("chartOpen") === "0") document.getElementById("chartwrap").open = false; } catch (e) {}
-document.getElementById("chartwrap").addEventListener("toggle", e => {
-  try { localStorage.setItem("chartOpen", e.target.open ? "1" : "0"); } catch (err) {}
-});
+for (const [id, key] of [["chartwrap", "chartOpen"], ["scorewrap", "scoreOpen"]]) {
+  const d = document.getElementById(id);
+  try { if (localStorage.getItem(key) === "0") d.open = false; } catch (e) {}
+  d.addEventListener("toggle", e => {
+    try { localStorage.setItem(key, e.target.open ? "1" : "0"); } catch (err) {}
+  });
+}
 </script>
 <div class="viewopts">
   <label><input type="checkbox" id="showPicks"> show picks</label>
