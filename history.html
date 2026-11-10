@@ -29,6 +29,7 @@
   .chip { padding: 1px 8px; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
           border-radius: 10px; cursor: pointer; opacity: .6; user-select: none; }
   .chip.on { opacity: 1; font-weight: 600; border-width: 2px; }
+  .chip.util { font-style: italic; border-style: dashed; }
   .games { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
   .card { display: flex; align-items: center; gap: 9px; padding: 5px 9px; border-radius: 7px;
           border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); }
@@ -220,12 +221,17 @@ function drawChart() {
 }
 
 function renderLegend() {
-  $("legend").innerHTML = hist.entries.map((h, i) =>
+  $("legend").innerHTML =
+    '<span class="chip util" id="selNone">none</span>' +
+    '<span class="chip util" id="selAll">all</span>' +
+    hist.entries.map((h, i) =>
     `<span class="chip${highlighted.has(h) ? " on" : ""}" data-h="${h}"
        style="${highlighted.has(h) ? "color:" + color(i) : ""}">${h}</span>`).join("");
-  for (const c of document.querySelectorAll(".chip"))
+  for (const c of document.querySelectorAll(".chip[data-h]"))
     c.onclick = () => { const h = c.dataset.h;
       highlighted.has(h) ? highlighted.delete(h) : highlighted.add(h); render(); };
+  $("selNone").onclick = () => { highlighted.clear(); render(); };
+  $("selAll").onclick = () => { highlighted = new Set(hist.entries); render(); };
 }
 
 function renderGames() {
