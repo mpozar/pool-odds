@@ -62,20 +62,9 @@
   <select id="wk" style="font-size:.9rem"></select>
 </div>
 <details id="chartwrap" open>
-<summary>chart</summary>
+<summary>chart &amp; replay</summary>
 <div id="chartbox"><svg id="chart" viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></div>
 <div class="legend" id="legend"></div>
-</details>
-<script>
-try { if (localStorage.getItem("chartOpen") === "0") document.getElementById("chartwrap").open = false; } catch (e) {}
-document.getElementById("chartwrap").addEventListener("toggle", e => {
-  try { localStorage.setItem("chartOpen", e.target.open ? "1" : "0"); } catch (err) {}
-});
-</script>
-<div class="viewopts">
-  <label><input type="checkbox" id="showPicks"> show picks</label>
-  <label><input type="checkbox" id="hideScores" checked> hide scores</label>
-</div>
 <div class="replay">
   <button id="btnStart" title="jump to start">⏮</button>
   <button id="btnBack" title="step back">‹</button>
@@ -89,6 +78,17 @@ document.getElementById("chartwrap").addEventListener("toggle", e => {
   <span id="tlabel" class="sub"></span>
 </div>
 <div class="games" id="games"></div>
+</details>
+<script>
+try { if (localStorage.getItem("chartOpen") === "0") document.getElementById("chartwrap").open = false; } catch (e) {}
+document.getElementById("chartwrap").addEventListener("toggle", e => {
+  try { localStorage.setItem("chartOpen", e.target.open ? "1" : "0"); } catch (err) {}
+});
+</script>
+<div class="viewopts">
+  <label><input type="checkbox" id="showPicks"> show picks</label>
+  <label><input type="checkbox" id="hideScores" checked> hide scores</label>
+</div>
 <div class="scroll"><table id="tbl">
   <thead><tr></tr></thead>
   <tbody></tbody></table></div>
