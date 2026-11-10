@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family Football Pool — Season</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 980px;
+         padding: 16px; background: Canvas; color: CanvasText; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  a { color: inherit; }
+  .sub { opacity: .65; font-size: .85rem; margin-bottom: 14px; }
+  .scroll { overflow-x: auto; margin-top: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; white-space: nowrap; }
+  th, td { padding: 4px 8px; text-align: center; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
+  th { font-weight: 600; opacity: .75; font-size: .76rem; }
+  td.name, th.name { text-align: left; position: sticky; left: 0; background: Canvas; }
+  td.tot, th.tot { text-align: right; font-weight: 600; }
+  td.paid { background: color-mix(in srgb, #2e8540 22%, transparent); }
+  td.first { background: color-mix(in srgb, #2e8540 45%, transparent); font-weight: 700; }
+  td.dim { opacity: .45; }
+  footer { margin-top: 26px; font-size: .75rem; opacity: .5; }
+</style>
+</head>
+<body>
+<div style="display:flex; align-items:baseline; gap:16px">
+  <h1>Season</h1>
+  <a href="./" style="font-size:.85rem; opacity:.75">← live odds</a>
+  <a href="history.html" style="font-size:.85rem; opacity:.75">history →</a>
+</div>
+<div class="sub" id="sub">loading…</div>
+<div class="scroll"><table id="tbl"><thead><tr></tr></thead><tbody></tbody></table></div>
+<footer>Each cell: games picked correctly, with the week's finishing place in parentheses.
+Shaded cells finished in the money. Winnings are the official Splash payouts, ties split.</footer>
+<script>
+(async () => {
+  const data = await fetch("data.json", { cache: "no-store" }).then(r => r.json());
+  let weeks = [...(data.past_weeks || [])];
+  if (data.final && !weeks.includes(data.week)) weeks.push(data.week);
+  weeks = [...new Set(weeks)].sort((a, b) => a - b);
+  const loaded = await Promise.all(weeks.map(w =>
+    fetch(`week_${w}.json`).then(r => r.ok ? r.json() : null).catch(() => null)));
+  const byWeek = new Map();
+  weeks.forEach((w, i) => { if (loaded[i]?.final) byWeek.set(w, loaded[i]); });
+  weeks = [...byWeek.keys()];
+
+  const rows = new Map();  // handle -> { weeks: Map, total }
+  for (const w of weeks)
+    for (const e of byWeek.get(w).entries) {
+      if (!rows.has(e.handle)) rows.set(e.handle, { weeks: new Map(), total: 0 });
+      const r = rows.get(e.handle);
+      r.weeks.set(w, e);
+      r.total += e.won || 0;
+    }
+  const order = [...rows.entries()].sort((a, b) =>
+    b[1].total - a[1].total ||
+    [...b[1].weeks.values()].reduce((s, e) => s + e.wins, 0) -
+    [...a[1].weeks.values()].reduce((s, e) => s + e.wins, 0) ||
+    a[0].localeCompare(b[0]));
+
+  const pays = byWeek.get(weeks[weeks.length - 1])?.payouts || [];
+  document.getElementById("sub").textContent =
+    `${rows.size} entries · ${weeks.length} week${weeks.length === 1 ? "" : "s"} settled` +
+    (pays.length ? ` · weekly payouts ${pays.map(p => "$" + p).join(" / ")}` : "");
+
+  document.querySelector("#tbl thead tr").innerHTML =
+    '<th class="name">entry</th>' +
+    weeks.map(w => `<th>wk ${w}</th>`).join("") +
+    '<th class="tot">won</th>';
+  document.querySelector("#tbl tbody").innerHTML = order.map(([h, r]) =>
+    "<tr><td class=\"name\">" + h + "</td>" +
+    weeks.map(w => {
+      const e = r.weeks.get(w);
+      if (!e) return '<td class="dim">–</td>';
+      const cls = String(e.place).replace("T", "") === "1" ? "first" : (e.won > 0 ? "paid" : "");
+      return `<td class="${cls}">${e.wins} (${e.place})</td>`;
+    }).join("") +
+    `<td class="tot">$${r.total % 1 ? r.total.toFixed(2) : r.total}</td></tr>`).join("");
+})().catch(e => { document.getElementById("sub").textContent = "failed to load: " + e; });
+</script>
+</body>
+</html>
