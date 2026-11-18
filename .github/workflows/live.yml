@@ -71,7 +71,17 @@ jobs:
           git config user.name "pool-live-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           END=$((SECONDS + 19800))   # 5.5h budget inside the 6h job limit
-          chain() { gh workflow run live.yml -f chain=1; echo "re-dispatched successor"; }
+          chain() {
+            # the hand-off is the chain's weak link: verify it, loudly. A
+            # failed step here means a failure email, and the cron/poke
+            # layers restart coverage later.
+            for i in 1 2 3; do
+              gh workflow run live.yml -f chain=1 && { echo "re-dispatched successor"; return 0; }
+              sleep 20
+            done
+            echo "::error::could not dispatch successor run"
+            return 1
+          }
           while :; do
             git pull -q --rebase --autostash || true
             NEXT=$(python live/tick.py --next)
