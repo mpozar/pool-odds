@@ -1,25 +1,38 @@
 name: live-tick
 
-# Game-time updates for the pool page: live/tick.py reads live/snapshot.json
-# (published post-lock from a residential machine; Splash's firewall blocks
-# datacenter IPs) and ESPN's public scoreboard, and idles in seconds outside
-# game windows. The cron covers 13:00-06:00 UTC daily, which spans every NFL
-# kickoff slot (international mornings through late MNF) on any day of the
-# week, holidays included.
+# Game-time updates for the pool page. GitHub skips most */5 cron firings
+# (observed 2026-11-17: 3 of ~130 fired), so a run is NOT one tick: it is a
+# self-sustaining window. Each run loops live/tick.py every 5 minutes while
+# games are live or imminent, sleeps precisely until the next kickoff when
+# the gap is short, and re-dispatches itself before the 6-hour job limit.
+# One fired trigger therefore carries a whole game window. Triggers:
+#   - push to live/snapshot.json: the Mac publishes it right at pick locks
+#     (Thursday night, Sunday slate lock), exactly when coverage must start
+#   - schedule: best-effort backup, mainly for Monday night and settles
+#   - workflow_dispatch: manual, the Mac agent's poke, and self-chaining
 
 on:
   workflow_dispatch:
     inputs:
       touch:
-        description: "write live/heartbeat.json to test the push->Pages path"
+        description: "write live/heartbeat.json to test push->Pages and self-dispatch"
         required: false
         default: ""
+      chain:
+        description: "set by self-dispatch; stops touch tests from recursing"
+        required: false
+        default: ""
+  push:
+    paths:
+      - "live/snapshot.json"
   schedule:
-    - cron: "*/5 13-23 * * *"
-    - cron: "*/5 0-5 * * *"
+    - cron: "7,27,47 13-23 * * *"
+    - cron: "7,27,47 0-5 * * *"
+    - cron: "37 6-12 * * *"
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: live-tick
@@ -28,7 +41,7 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,20 +50,55 @@ jobs:
           cache: pip
           cache-dependency-path: live/requirements.txt
       - run: pip install --quiet -r live/requirements.txt
-      - name: tick
+      - name: touch (diagnostics only)
+        if: inputs.touch != ''
         env:
-          TICK_TOUCH: ${{ inputs.touch }}
-        run: python live/tick.py
-      - name: push if changed
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TICK_TOUCH=1 python live/tick.py
+          git config user.name "pool-live-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "heartbeat" && git push -q
+          if [ -z "${{ inputs.chain }}" ]; then
+            gh workflow run live.yml -f touch=1 -f chain=1
+            echo "self-dispatched a chained touch"
+          fi
+      - name: window loop
+        if: inputs.touch == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "pool-live-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet && { echo "no changes"; exit 0; }
-          WEEK=$(python -c 'import json;print(json.load(open("data.json"))["week"])')
-          git commit -q -m "week $WEEK update"
-          for i in 1 2 3; do
-            git push -q && exit 0
-            git pull -q --rebase || exit 1
+          END=$((SECONDS + 19800))   # 5.5h budget inside the 6h job limit
+          chain() { gh workflow run live.yml -f chain=1; echo "re-dispatched successor"; }
+          while :; do
+            git pull -q --rebase --autostash || true
+            NEXT=$(python live/tick.py --next)
+            echo "next=${NEXT}s"
+            if [ "$NEXT" -lt 0 ]; then echo "nothing pending; chain ends"; exit 0; fi
+            if [ "$NEXT" -gt 0 ]; then
+              # quiet until the next kickoff window: bridge short gaps by
+              # sleeping, hand long ones back to push/cron/poke triggers
+              if [ "$NEXT" -gt 28800 ]; then echo "next window ${NEXT}s away; chain ends"; exit 0; fi
+              if [ $((SECONDS + NEXT + 420)) -gt "$END" ]; then chain; exit 0; fi
+              sleep "$NEXT"
+              continue
+            fi
+            python live/tick.py
+            if [ -n "$(git status --porcelain)" ]; then
+              git add -A
+              git commit -q -m "week $(python -c 'import json;print(json.load(open("data.json"))["week"])') update"
+              for i in 1 2 3; do git push -q && break; git pull -q --rebase || exit 1; done
+              CHANGED=1
+            else
+              CHANGED=0
+            fi
+            ACTIVE=$(python live/tick.py --active)
+            if [ "$CHANGED" -eq 0 ] && [ "$ACTIVE" -eq 0 ]; then
+              echo "no change, nothing live or imminent; chain ends"
+              exit 0
+            fi
+            if [ $((SECONDS + 420)) -gt "$END" ]; then chain; exit 0; fi
+            sleep 300
           done
-          git push -q

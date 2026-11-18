@@ -343,12 +343,63 @@ def gate(snap: dict) -> str | None:
         st = state["games"].get(g["gid"], {}).get("status")
         if start <= now and st != "final":
             return f"started, not final: {g['road']}@{g['home']}"
-    if snap.get("all_locked") and not (ROOT / f"week_{snap['week']}.json").exists():
+    if (snap.get("all_locked")
+            and not (ROOT / f"week_{snap['week']}.json").exists()
+            and all(_iso(g["startsAt"]) <= now for g in snap["games"])):
         return "settle pending"
     return None
 
 
+def next_action() -> int:
+    """Seconds until there is anything to do: 0 = act now, -1 = nothing
+    pending (chain can end; a snapshot push or cron restarts things). Drives
+    the workflow's loop/sleep/re-dispatch logic, so one fired trigger can
+    carry a whole game window — GitHub skips most */5 cron firings."""
+    if not SNAP.exists():
+        return -1
+    snap = json.loads(SNAP.read_text())
+    if gate(snap):
+        return 0
+    if (ROOT / f"week_{snap['week']}.json").exists():
+        return -1
+    if sum(1 for e in snap["entries"] if e["picks"]) <= 1:
+        return -1
+    now = _now()
+    pending = [(_iso(g["startsAt"]) - now).total_seconds() - 45 * 60
+               for g in snap["games"] if _iso(g["startsAt"]) > now]
+    pending = [d for d in pending if d > 0]
+    return int(min(pending)) + 5 if pending else -1
+
+
+def is_active() -> int:
+    """1 while the workflow loop should stay alive: a game is in progress per
+    our carried state, or a kickoff is imminent (45 min ahead) or recent
+    enough (4 h back) that ESPN may still flip it live. The 4 h backstop lets
+    a postponed game stop holding the chain open."""
+    if not SNAP.exists():
+        return 0
+    snap = json.loads(SNAP.read_text())
+    state = load_state(snap["week"])
+    now = _now()
+    for g in snap["games"]:
+        st = state["games"].get(g["gid"], {}).get("status")
+        if st == "in_progress":
+            return 1
+        start = _iso(g["startsAt"])
+        if st != "final" and (now - timedelta(hours=4)
+                              <= start <= now + timedelta(minutes=45)):
+            return 1
+    return 0
+
+
 def main() -> None:
+    import sys
+    if "--next" in sys.argv:
+        print(next_action())
+        return
+    if "--active" in sys.argv:
+        print(is_active())
+        return
     if os.environ.get("TICK_TOUCH"):
         # diagnostic (manual dispatch only): force a commit to verify the
         # bot-push -> Pages-deploy path end to end
