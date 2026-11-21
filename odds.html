@@ -324,15 +324,20 @@ function render() {
 }
 
 function stop() { if (timer) clearInterval(timer); timer = null; $("btnPlay").textContent = "▶"; }
+function stepReplay() {
+  if (cur >= hist.rows.length - 1) return stop();
+  cur++; render();
+}
 function play() {
   if (timer) return stop();
   if (cur >= hist.rows.length - 1) cur = 0;
   $("btnPlay").textContent = "❚❚";
-  timer = setInterval(() => {
-    if (cur >= hist.rows.length - 1) return stop();
-    cur++; render();
-  }, +$("speed").value);
+  timer = setInterval(stepReplay, +$("speed").value);
 }
+// speed changes take effect immediately, mid-playback
+$("speed").onchange = () => {
+  if (timer) { clearInterval(timer); timer = setInterval(stepReplay, +$("speed").value); }
+};
 
 async function loadWeek(w) {
   stop();
