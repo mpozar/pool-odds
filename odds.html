@@ -46,6 +46,10 @@
   th, td { padding: 4px 7px; text-align: right; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
   th { font-weight: 600; opacity: .75; font-size: .76rem; }
   td.name, th.name { text-align: left; }
+  td.name { cursor: pointer; }
+  tr.hl { outline: 2px solid #4a7dbd; outline-offset: -1px; }
+  tr.hl td.name { font-weight: 700; }
+  tr.hl td:not(.pk) { background: color-mix(in srgb, #4a7dbd 16%, transparent); }
   td.pk { font-size: .72rem; padding: 2px 4px; text-align: center; }
   th.pk { font-size: .64rem; padding: 2px 3px; text-align: center; line-height: 1.25; }
   td.ok  { background: color-mix(in srgb, #2e8540 50%, transparent); }
@@ -121,6 +125,8 @@ const color = i => `hsl(${(i * 137.508) % 360}, 62%, 45%)`;
 const GAP_S = 3600, GAP_W = 2.5;
 
 let hist = null, cur = 0, timer = null, highlighted = new Set(), liveWeek = null, liveFinal = true;
+let tableHl = null;  // one entry highlighted in the table, by handle
+try { tableHl = localStorage.getItem("tableHl") || null; } catch (e) {}
 
 function metric() { return document.querySelector('input[name=metric]:checked').value; }
 
@@ -304,11 +310,22 @@ function renderTable() {
       }
       return `<td class="${cls}"${sty}>${p || "–"}</td>`;
     }).join("") : "";
-    return `<tr><td>${rk[i]}</td><td class="name">${hist.entries[i]}</td><td>${r.w[i]}</td>` + picks +
+    const h = hist.entries[i];
+    return `<tr data-h="${h}"${h === tableHl ? ' class="hl"' : ""}><td>${rk[i]}</td><td class="name">${h}</td><td>${r.w[i]}</td>` + picks +
       `<td>${hist.tb ? hist.tb[i] ?? "–" : "–"}</td>` +
       `<td>$${r.ev[i].toFixed(2)}</td><td>${pct(r.p1[i])}</td></tr>`;
   }).join("");
 }
+
+// click a name to highlight that entry's row (one at a time; click again to clear)
+document.querySelector("#tbl").addEventListener("click", e => {
+  const td = e.target.closest("td.name");
+  const h = td && td.parentElement.dataset.h;
+  if (!h) return;
+  tableHl = tableHl === h ? null : h;
+  try { localStorage.setItem("tableHl", tableHl || ""); } catch (err) {}
+  renderTable();
+});
 
 function render() {
   if (!hist) return;
