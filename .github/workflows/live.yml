@@ -91,9 +91,11 @@ jobs:
               # quiet until the next kickoff window: bridge short gaps by
               # sleeping, hand long ones back to push/cron/poke triggers
               if [ "$NEXT" -gt 28800 ]; then echo "next window ${NEXT}s away; chain ends"; exit 0; fi
-              if [ $((SECONDS + NEXT + 420)) -gt "$END" ]; then chain; exit 0; fi
-              sleep "$NEXT"
-              continue
+              REM=$((END - SECONDS - 420))
+              if [ "$NEXT" -le "$REM" ]; then sleep "$NEXT"; continue; fi
+              # longer than this job's budget: sleep the budget out, THEN hand off
+              [ "$REM" -gt 60 ] && sleep "$REM"
+              chain; exit 0
             fi
             python live/tick.py
             if [ -n "$(git status --porcelain)" ]; then
