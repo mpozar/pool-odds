@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family Football Pool — Live Odds &amp; Replay</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0 auto; max-width: 980px;
+         padding: 16px; background: Canvas; color: CanvasText; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  a { color: inherit; }
+  .sub { opacity: .65; font-size: .85rem; }
+  .controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 10px 0 16px; font-size: .85rem; }
+  .viewopts { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin: 14px 0; font-size: .85rem; opacity: .9; }
+  .replay { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0; font-size: .85rem; }
+  .replay button { font-size: .9rem; padding: 3px 10px; cursor: pointer; }
+  .replay input[type=range] { flex: 1; min-width: 160px; }
+  details { margin: 14px 0; }
+  summary { cursor: pointer; font-size: .9rem; opacity: .7; user-select: none; }
+  .nav { display: flex; gap: 14px; font-size: .85rem; margin: 4px 0 10px; }
+  .nav a { opacity: .7; }
+  .nav .here { font-weight: 700; }
+  #chartbox { position: relative; margin: 6px 0 4px; }
+  #tip { position: absolute; display: none; pointer-events: none; background: Canvas;
+         border: 1px solid color-mix(in srgb, CanvasText 30%, transparent); border-radius: 5px;
+         padding: 2px 8px; font-size: .75rem; white-space: nowrap; }
+  svg { width: 100%; height: auto; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; font-size: .76rem; }
+  .chip { padding: 1px 8px; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+          border-radius: 10px; cursor: pointer; opacity: .6; user-select: none; }
+  .chip.on { opacity: 1; font-weight: 600; border-width: 2px; }
+  .chip.util { opacity: 1; font-weight: 600; border-width: 2px;
+               background: color-mix(in srgb, CanvasText 10%, transparent); }
+  .games { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+  .card { display: flex; align-items: center; gap: 9px; padding: 5px 9px; border-radius: 7px;
+          border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); }
+  .sb { display: grid; grid-template-columns: auto auto; column-gap: 9px; font-size: .8rem; }
+  .sb .tm { display: contents; }
+  .sb b { text-align: right; font-weight: 600; }
+  .tm.win > * { color: #3f9e4d; font-weight: 700; }
+  .st { font-size: .7rem; opacity: .8; min-width: 54px; line-height: 1.35; }
+  .live { color: #c2443c; font-weight: 700; }
+  .scroll { overflow-x: auto; margin-top: 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; white-space: nowrap; }
+  th, td { padding: 4px 7px; text-align: right; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
+  th { font-weight: 600; opacity: .75; font-size: .76rem; }
+  td.name, th.name { text-align: left; }
+  td.pk { font-size: .72rem; padding: 2px 4px; text-align: center; }
+  th.pk { font-size: .64rem; padding: 2px 3px; text-align: center; line-height: 1.25; }
+  td.ok  { background: color-mix(in srgb, #2e8540 50%, transparent); }
+  td.bad { background: color-mix(in srgb, #b0342a 45%, transparent); }
+  .up { color: #3f9e4d; } .down { color: #c2443c; }
+  footer { margin-top: 26px; font-size: .75rem; opacity: .5; }
+</style>
+</head>
+<body>
+<h1>Live Odds &amp; Replay</h1>
+<nav class="nav"><a href="./">weekly standings</a><a href="season.html">season standings</a><span class="here">live odds</span></nav>
+<div class="controls">
+  <div class="sub" id="sub">loading…</div>
+  <span style="flex:1"></span>
+  <label><input type="radio" name="metric" value="ev" checked> E$</label>
+  <label><input type="radio" name="metric" value="p1"> P(1st)</label>
+  <select id="wk" style="font-size:.9rem"></select>
+</div>
+<details id="chartwrap" open>
+<summary>chart &amp; replay</summary>
+<div id="chartbox"><svg id="chart" viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></div>
+<div class="legend" id="legend"></div>
+<div class="replay">
+  <button id="btnStart" title="jump to start">⏮</button>
+  <button id="btnBack" title="step back">‹</button>
+  <button id="btnPlay" title="play / pause">▶</button>
+  <button id="btnFwd" title="step forward">›</button>
+  <button id="btnEnd" title="jump to end">⏭</button>
+  <select id="speed"><option value="3000">1×</option><option value="1500">2×</option>
+    <option value="600" selected>5×</option><option value="300">10×</option>
+    <option value="60">50×</option></select>
+  <input type="range" id="scrub" min="0" max="0" value="0" step="1">
+  <span id="tlabel" class="sub"></span>
+</div>
+</details>
+<details id="scorewrap" open>
+<summary>scoreboard</summary>
+<div class="viewopts" style="margin:10px 0 0">
+  <label><input type="checkbox" id="hideScores" checked> hide scores</label>
+</div>
+<div class="games" id="games"></div>
+</details>
+<script>
+for (const [id, key] of [["chartwrap", "chartOpen"], ["scorewrap", "scoreOpen"]]) {
+  const d = document.getElementById(id);
+  try { if (localStorage.getItem(key) === "0") d.open = false; } catch (e) {}
+  d.addEventListener("toggle", e => {
+    try { localStorage.setItem(key, e.target.open ? "1" : "0"); } catch (err) {}
+  });
+}
+</script>
+<div class="viewopts">
+  <label><input type="checkbox" id="showPicks"> show picks</label>
+</div>
+<div class="scroll"><table id="tbl">
+  <thead><tr></tr></thead>
+  <tbody></tbody></table></div>
+<footer>Snapshots are taken every few minutes while games are in progress, starting when all
+picks become visible at Sunday lock. E$ is each entry's expected winnings at that moment
+(ties split evenly); P(1st) is the chance of finishing first. Scores stay hidden until you
+uncheck "hide scores".
+<br><br>
+Win probabilities: before kickoff, derived from the point spread on the Splash picksheet;
+during games, ESPN's live in-game win probability where available. Note on ties: the
+projection splits tied places evenly (a two-way tie for 1st counts as half of 1st and half
+of 2nd for each entry). It does not use or simulate the actual Monday point total — in
+reality a tie is won outright by whoever's TB guess is closest. Picks appear once a game
+has locked. Refreshes automatically.</footer>
+<script>
+const $ = id => document.getElementById(id);
+const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";
+const color = i => `hsl(${(i * 137.508) % 360}, 62%, 45%)`;
+const GAP_S = 3600, GAP_W = 2.5;
+
+let hist = null, cur = 0, timer = null, highlighted = new Set(), liveWeek = null, liveFinal = true;
+
+function metric() { return document.querySelector('input[name=metric]:checked').value; }
+
+function xUnits(rows) {
+  // compressed x-axis: 1 unit per tick, a fixed small gap where play stopped
+  const u = [0], brk = [];
+  for (let i = 1; i < rows.length; i++) {
+    const dt = (new Date(rows[i].t) - new Date(rows[i - 1].t)) / 1000;
+    if (dt > GAP_S) brk.push({at: u[i - 1] + GAP_W / 2, label: rows[i].t});
+    u.push(u[i - 1] + (dt > GAP_S ? GAP_W : 1));
+  }
+  return {u, brk};
+}
+
+function drawChart() {
+  const svg = $("chart");
+  if (!hist || hist.rows.length < 2) {
+    svg.innerHTML = `<text x="480" y="170" text-anchor="middle" fill="CanvasText" opacity=".5"
+      font-size="14">not enough snapshots yet — the series starts at Sunday lock</text>`;
+    return;
+  }
+  const rows = hist.rows, m = metric();
+  const W = 960, H = 340, L = 46, R = 30, T = 10, B = 26;
+  const {u, brk} = xUnits(rows);
+  const umax = u[u.length - 1] || 1;
+  const ymax = Math.max(...rows.flatMap(r => r[m])) * 1.06 || 1;
+  const X = i => L + u[i] / umax * (W - L - R);
+  const Xu = v => L + v / umax * (W - L - R);
+  const Y = v => T + (1 - v / ymax) * (H - T - B);
+  let s = "";
+  // y grid
+  for (let k = 0; k <= 4; k++) {
+    const v = ymax * k / 4;
+    s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="CanvasText" opacity=".12"/>` +
+         `<text x="${L - 5}" y="${Y(v) + 4}" text-anchor="end" font-size="10" fill="CanvasText" opacity=".6">` +
+         (m === "ev" ? "$" + v.toFixed(0) : (v * 100).toFixed(0) + "%") + `</text>`;
+  }
+  // time labels on round 5-minute marks, placed by interpolating between snapshots
+  const ticks = [];
+  for (let i = 1; i < rows.length; i++) {
+    const t0 = +new Date(rows[i - 1].t), t1 = +new Date(rows[i].t);
+    if ((t1 - t0) / 1000 > GAP_S) continue; // gaps get their own divider labels
+    for (let T = Math.ceil(t0 / 300000) * 300000; T <= t1; T += 300000)
+      ticks.push({pos: u[i - 1] + (T - t0) / (t1 - t0) * (u[i] - u[i - 1]), T});
+  }
+  const tstep = Math.max(1, Math.ceil(ticks.length / 7));
+  const label = k => {
+    const x = Xu(ticks[k].pos).toFixed(1);
+    return `<line x1="${x}" x2="${x}" y1="${H - B}" y2="${H - B + 5}" stroke="CanvasText" opacity=".5"/>` +
+      `<text x="${x}" y="${H - 8}" text-anchor="middle" font-size="10" fill="CanvasText" opacity=".6">` +
+      new Date(ticks[k].T).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  };
+  if (ticks.length) {
+    const last = ticks.length - 1, minGap = umax / 14;
+    for (let k = 0; k < ticks.length; k += tstep)
+      if (ticks[last].pos - ticks[k].pos > minGap) s += label(k);
+    s += label(last); // the rightmost mark always gets its label
+  }
+  let lastBx = -1e9, lvl = 0; // stack labels of dividers that sit close together
+  for (const b of brk) {
+    const bx = Xu(b.at);
+    lvl = bx - lastBx < 90 ? lvl + 1 : 0;
+    lastBx = bx;
+    s += `<line x1="${bx}" x2="${bx}" y1="${T}" y2="${H - B}" stroke="CanvasText" opacity=".3" stroke-dasharray="3,4"/>` +
+         `<text x="${bx}" y="${T + 10 + lvl * 11}" text-anchor="middle" font-size="9" fill="CanvasText" opacity=".55">` +
+         new Date(b.label).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"}) + `</text>`;
+  }
+  // lines: muted for everyone, colored + thick for highlighted
+  const pts = ei => rows.map((r, i) => `${X(i).toFixed(1)},${Y(r[m][ei]).toFixed(1)}`).join(" ");
+  const line = (ei, css) => `<polyline class="ln" data-h="${hist.entries[ei]}" fill="none" points="${pts(ei)}" ${css}/>`;
+  hist.entries.forEach((h, ei) => {
+    if (!highlighted.has(h)) s += line(ei, `stroke="CanvasText" stroke-width="1" opacity=".22"`);
+  });
+  hist.entries.forEach((h, ei) => {
+    if (highlighted.has(h)) s += line(ei, `stroke="${color(ei)}" stroke-width="2.4"`);
+  });
+  // cursor
+  s += `<line x1="${X(cur)}" x2="${X(cur)}" y1="${T}" y2="${H - B}" stroke="#c2443c" stroke-width="1.5" opacity=".8"/>`;
+  // invisible fat twins on top for easy hovering
+  hist.entries.forEach((h, ei) => {
+    s += `<polyline class="hit" data-h="${h}" fill="none" points="${pts(ei)}"
+           stroke="transparent" stroke-width="10" pointer-events="stroke"/>`;
+  });
+  svg.innerHTML = s;
+  // click anywhere on the chart to snap the replay cursor to the nearest tick
+  svg.onclick = e => {
+    const rc = svg.getBoundingClientRect();
+    const px = (e.clientX - rc.left) / rc.width * W;
+    let best = 0;
+    for (let i = 1; i < rows.length; i++)
+      if (Math.abs(X(i) - px) < Math.abs(X(best) - px)) best = i;
+    stop(); cur = best; render();
+  };
+  const tip = $("tip"), box = $("chartbox");
+  for (const el of svg.querySelectorAll(".hit")) {
+    el.onmousemove = e => {
+      const rc = box.getBoundingClientRect();
+      tip.textContent = el.dataset.h;
+      tip.style.left = (e.clientX - rc.left + 12) + "px";
+      tip.style.top = (e.clientY - rc.top - 26) + "px";
+      tip.style.display = "block";
+      for (const ln of svg.querySelectorAll(`.ln`))
+        if (ln.dataset.h === el.dataset.h) { ln.setAttribute("stroke-width", "3.4"); ln.setAttribute("opacity", "1"); }
+    };
+    el.onmouseleave = () => {
+      tip.style.display = "none";
+      for (const ln of svg.querySelectorAll(`.ln`))
+        if (ln.dataset.h === el.dataset.h) {
+          const hl = highlighted.has(el.dataset.h);
+          ln.setAttribute("stroke-width", hl ? "2.4" : "1");
+          ln.setAttribute("opacity", hl ? "1" : ".22");
+        }
+    };
+  }
+}
+
+function renderLegend() {
+  $("legend").innerHTML =
+    '<span class="chip util" id="selNone">none</span>' +
+    '<span class="chip util" id="selAll">all</span>' +
+    hist.entries.map((h, i) =>
+    `<span class="chip${highlighted.has(h) ? " on" : ""}" data-h="${h}"
+       style="${highlighted.has(h) ? "color:" + color(i) : ""}">${h}</span>`).join("");
+  for (const c of document.querySelectorAll(".chip[data-h]"))
+    c.onclick = () => { const h = c.dataset.h;
+      highlighted.has(h) ? highlighted.delete(h) : highlighted.add(h); render(); };
+  $("selNone").onclick = () => { highlighted.clear(); render(); };
+  $("selAll").onclick = () => { highlighted = new Set(hist.entries); render(); };
+}
+
+function renderGames() {
+  const hide = $("hideScores").checked, r = hist.rows[cur];
+  $("games").innerHTML = hist.games.map((name, i) => {
+    const [rs, hs, wp, st] = r.g[i], [road, home] = name.split("@");
+    const sc = v => hide ? "–" : (v ?? "–");
+    const winR = !hide && st === 2 && rs > hs, winH = !hide && st === 2 && hs > rs;
+    const right = st === 2 ? "final"
+      : st === 1 ? `${home} ${pct(wp)}<br><span class="live">LIVE</span>`
+      : (wp != null ? `${home} ${pct(wp)}` : "–");
+    return `<div class="card"><div class="sb">` +
+      `<div class="tm${winR ? " win" : ""}"><span>${road}</span><b>${sc(rs)}</b></div>` +
+      `<div class="tm${winH ? " win" : ""}"><span>${home}</span><b>${sc(hs)}</b></div>` +
+      `</div><div class="st">${right}</div></div>`;
+  }).join("");
+}
+
+function ranksAt(i, m) {
+  const vals = hist.rows[i][m];
+  return hist.entries.map((_, e) => 1 + vals.filter(v => v > vals[e]).length);
+}
+
+function renderTable() {
+  const r = hist.rows[cur];
+  const showP = $("showPicks").checked && hist.picks;
+  const rk = ranksAt(cur, "ev");
+  // winner of each game as of the cursor's moment (grades fill in as the replay runs)
+  const win = hist.games.map((name, gi) => {
+    const [rs, hs, , st] = r.g[gi];
+    if (st !== 2) return null;
+    const [road, home] = name.split("@");
+    return rs > hs ? road : hs > rs ? home : "TIE";
+  });
+  document.querySelector("#tbl thead tr").innerHTML =
+    `<th>#</th><th class="name">Entry</th><th>W</th>` +
+    (showP ? hist.games.map((n, gi) => `<th class="pk"${r.g[gi][3] === 1 ? ' style="color:#c2443c"' : ""}>${n.split("@").join("<br>")}</th>`).join("") : "") +
+    `<th>TB</th><th>E$</th><th>P(1st)</th>`;
+  const order = hist.entries.map((h, i) => i).sort((a, b) => r.ev[b] - r.ev[a] || r.w[b] - r.w[a]);
+  document.querySelector("#tbl tbody").innerHTML = order.map(i => {
+    const picks = showP ? hist.picks[i].map((p, gi) => {
+      let cls = "pk", sty = "";
+      const [, , wp, st] = r.g[gi];
+      if (p && win[gi] && win[gi] !== "TIE") cls += p === win[gi] ? " ok" : " bad";
+      else if (p && st === 1 && wp != null) {
+        // live: shade by the pick's current win probability; the gray base fades
+        // out with certainty so 100%/0% matches the final ok/bad colors exactly
+        const pp = p === hist.games[gi].split("@")[1] ? wp : 1 - wp;
+        const str = Math.abs(pp - 0.5) * 2;
+        const a = (str * (pp >= 0.5 ? 50 : 45)).toFixed(1);
+        const gr = ((1 - str) * 8).toFixed(1);
+        sty = ` style="background:color-mix(in srgb, ${pp >= 0.5 ? "#2e8540" : "#b0342a"} ${a}%, color-mix(in srgb, CanvasText ${gr}%, transparent))"`;
+      }
+      return `<td class="${cls}"${sty}>${p || "–"}</td>`;
+    }).join("") : "";
+    return `<tr><td>${rk[i]}</td><td class="name">${hist.entries[i]}</td><td>${r.w[i]}</td>` + picks +
+      `<td>${hist.tb ? hist.tb[i] ?? "–" : "–"}</td>` +
+      `<td>$${r.ev[i].toFixed(2)}</td><td>${pct(r.p1[i])}</td></tr>`;
+  }).join("");
+}
+
+function render() {
+  if (!hist) return;
+  cur = Math.min(cur, hist.rows.length - 1);
+  $("scrub").max = hist.rows.length - 1;
+  $("scrub").value = cur;
+  $("tlabel").textContent = hist.rows.length ?
+    new Date(hist.rows[cur].t).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"}) +
+    ` (${cur + 1}/${hist.rows.length})` : "";
+  $("sub").textContent = `Week ${hist.week} · ${hist.rows.length} snapshots` +
+    (hist.week === liveWeek && !liveFinal ? " · still recording" : "");
+  drawChart(); renderLegend(); renderGames(); renderTable();
+}
+
+function stop() { if (timer) clearInterval(timer); timer = null; $("btnPlay").textContent = "▶"; }
+function play() {
+  if (timer) return stop();
+  if (cur >= hist.rows.length - 1) cur = 0;
+  $("btnPlay").textContent = "❚❚";
+  timer = setInterval(() => {
+    if (cur >= hist.rows.length - 1) return stop();
+    cur++; render();
+  }, +$("speed").value);
+}
+
+async function loadWeek(w) {
+  stop();
+  try {
+    hist = await (await fetch(`history_${w}.json?t=` + Date.now())).json();
+    // start with the top 10 entries by current E$ selected
+    const last = hist.rows[hist.rows.length - 1];
+    highlighted = new Set(last ? hist.entries.map((h, i) => [last.ev[i], h])
+      .sort((a, b) => b[0] - a[0]).slice(0, 10).map(x => x[1]) : hist.entries);
+    cur = hist.rows.length - 1;
+    render();
+  } catch (e) { $("sub").textContent = "failed to load history — " + e; }
+}
+
+async function init() {
+  try {
+    const d = await (await fetch("data.json?t=" + Date.now())).json();
+    liveWeek = d.week; liveFinal = !!d.final;
+    const wks = d.history_weeks || [];
+    if (!wks.length) { $("sub").textContent = "no history recorded yet"; return; }
+    const sel = $("wk");
+    for (const n of [...wks].reverse()) sel.add(new Option(`Week ${n}`, n));
+    sel.onchange = () => loadWeek(sel.value);
+    await loadWeek(sel.value);
+  } catch (e) { $("sub").textContent = "failed to load — " + e; }
+}
+
+$("btnPlay").onclick = play;
+$("btnStart").onclick = () => { stop(); cur = 0; render(); };
+$("btnEnd").onclick = () => { stop(); cur = hist.rows.length - 1; render(); };
+$("btnBack").onclick = () => { stop(); cur = Math.max(0, cur - 1); render(); };
+$("btnFwd").onclick = () => { stop(); cur = Math.min(hist.rows.length - 1, cur + 1); render(); };
+$("scrub").oninput = e => { stop(); cur = +e.target.value; render(); };
+// remember toggle state in this browser between visits
+function loadPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem("poolodds.replay") || "{}");
+    if ("showPicks" in p) $("showPicks").checked = p.showPicks;
+    if ("hideScores" in p) $("hideScores").checked = p.hideScores;
+  } catch (e) {}
+}
+function savePrefs() {
+  try {
+    localStorage.setItem("poolodds.replay", JSON.stringify(
+      {showPicks: $("showPicks").checked, hideScores: $("hideScores").checked}));
+  } catch (e) {}
+}
+$("hideScores").onchange = () => { savePrefs(); render(); };
+$("showPicks").onchange = () => { savePrefs(); render(); };
+loadPrefs();
+for (const r of document.querySelectorAll('input[name=metric]')) r.onchange = () => render();
+// while the current week is still recording, pull new snapshots every 2 min
+setInterval(async () => {
+  if (!hist || hist.week !== liveWeek || liveFinal || timer) return;
+  const atEnd = cur >= hist.rows.length - 1;
+  try {
+    const fresh = await (await fetch(`history_${hist.week}.json?t=` + Date.now())).json();
+    if (fresh.rows.length !== hist.rows.length) {
+      hist = fresh;
+      if (atEnd) cur = hist.rows.length - 1;
+      render();
+    }
+  } catch (e) {}
+}, 120 * 1000);
+init();
+</script>
+</body>
+</html>
