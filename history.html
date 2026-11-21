@@ -106,7 +106,14 @@ for (const [id, key] of [["chartwrap", "chartOpen"], ["scorewrap", "scoreOpen"]]
 <footer>Snapshots are taken every few minutes while games are in progress, starting when all
 picks become visible at Sunday lock. E$ is each entry's expected winnings at that moment
 (ties split evenly); P(1st) is the chance of finishing first. Scores stay hidden until you
-uncheck "hide scores".</footer>
+uncheck "hide scores".
+<br><br>
+Win probabilities: before kickoff, derived from the point spread on the Splash picksheet;
+during games, ESPN's live in-game win probability where available. Note on ties: the
+projection splits tied places evenly (a two-way tie for 1st counts as half of 1st and half
+of 2nd for each entry). It does not use or simulate the actual Monday point total — in
+reality a tie is won outright by whoever's TB guess is closest. Picks appear once a game
+has locked. Refreshes automatically.</footer>
 <script>
 const $ = id => document.getElementById(id);
 const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";

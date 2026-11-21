@@ -21,10 +21,7 @@
   td.ok  { background: color-mix(in srgb, #2e8540 50%, transparent); }
   td.bad { background: color-mix(in srgb, #b0342a 45%, transparent); }
   tr.money td { font-weight: 600; }
-  .games { margin-top: 16px; font-size: .85rem; opacity: .85; line-height: 1.7; }
-  .live { color: #c2443c; font-weight: 700; }
   .bar { display: inline-block; height: 9px; background: #4a7dbd; border-radius: 2px; vertical-align: middle; }
-  footer { margin-top: 18px; font-size: .75rem; opacity: .5; }
   .nav { display: flex; gap: 14px; font-size: .85rem; margin: 4px 0 10px; }
   .nav a { opacity: .7; }
   .nav .here { font-weight: 700; }
@@ -41,13 +38,6 @@
   <select id="wk" style="font-size:.9rem"></select>
 </div>
 <div class="scroll"><table id="tbl"><thead><tr></tr></thead><tbody></tbody></table></div>
-<div class="games" id="games"></div>
-<footer>Win probabilities: before kickoff, derived from the point spread on the Splash picksheet; during games, ESPN's live in-game win probability where available.
-Note on ties: the projection splits tied places evenly (a two-way tie for 1st
-counts as half of 1st and half of 2nd for each entry). It does not use or
-simulate the actual Monday point total — in reality a tie is won outright by
-whoever's TB guess is closest. Picks appear once a game has locked. Refreshes
-automatically.</footer>
 <script>
 const pct = x => x >= 0.995 ? "100%" : x < 0.0005 ? "–" : (x * 100).toFixed(x < 0.095 ? 1 : 0) + "%";
 const $ = id => document.getElementById(id);
@@ -111,12 +101,6 @@ function renderLive(d) {
       `<td class="name"><span class="bar" style="width:${Math.round(e.ev / d.payouts[0] * 60)}px"></span></td>` : "");
     tb.appendChild(tr);
   }
-  const open = d.games.filter(g => g.status !== "final");
-  const done = d.games.filter(g => g.status === "final");
-  $("games").innerHTML =
-    (open.length ? "<b>Open:</b> " + open.map(g =>
-      `${g.name}${g.live ? ' <span class="live">LIVE</span>' : ""} (${g.home} ${pct(g.p_home)})`).join(" · ") + "<br>" : "") +
-    (done.length ? "<b>Final:</b> " + done.map(g => `${g.name}: ${g.winner}`).join(" · ") : "");
 }
 
 function renderFinal(d) {
@@ -137,7 +121,6 @@ function renderFinal(d) {
       `<td class="name"><span class="bar" style="width:${Math.round(e.won / d.payouts[0] * 60)}px"></span></td>`;
     tb.appendChild(tr);
   }
-  $("games").innerHTML = "<b>Results:</b> " + d.games.map(g => `${g.name}: ${g.winner}`).join(" · ");
 }
 
 async function load() {
