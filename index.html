@@ -20,7 +20,6 @@
   td.pick { text-align: center; font-size: .82rem; }
   td.ok  { background: color-mix(in srgb, #2e8540 50%, transparent); }
   td.bad { background: color-mix(in srgb, #b0342a 45%, transparent); }
-  tr.money td { font-weight: 600; }
   .bar { display: inline-block; height: 9px; background: #4a7dbd; border-radius: 2px; vertical-align: middle; }
   .nav { display: flex; gap: 14px; font-size: .85rem; margin: 4px 0 10px; }
   .nav a { opacity: .7; }
@@ -92,7 +91,6 @@ function renderLive(d) {
   tb.innerHTML = "";
   for (const e of d.entries) {
     const tr = document.createElement("tr");
-    if (sim && e.ev >= d.payouts[d.payouts.length - 1]) tr.className = "money";
     const p = e.p_place;
     tr.innerHTML = `<td class="name">${e.handle}</td><td>${e.wins}</td><td>${e.tb ?? "–"}</td>` +
       cols.map(x => pickCell(x.g, e.picks ? e.picks[x.i] : null)).join("") +
@@ -113,7 +111,6 @@ function renderFinal(d) {
   tb.innerHTML = "";
   for (const e of d.entries) {
     const tr = document.createElement("tr");
-    if (e.won > 0) tr.className = "money";
     tr.innerHTML = `<td>${e.place ?? "–"}</td><td class="name">${e.handle}</td>` +
       `<td>${e.wins}-${e.losses}</td><td>${e.tb ?? "–"}</td><td>${e.td ?? "–"}</td>` +
       cols.map(x => pickCell(x.g, e.picks ? e.picks[x.i] : null)).join("") +
