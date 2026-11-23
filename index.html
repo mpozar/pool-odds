@@ -79,24 +79,19 @@ function fillDropdown(d) {
 }
 
 function renderLive(d) {
-  const sim = d.sim !== false; // placement odds only once every pick is visible
   const when = new Date(d.updated).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"});
-  $("sub").textContent = `Week ${d.week} · $${d.pot} pot ($${d.payouts.join(" / $")}) · updated ${when}` +
-    (sim ? "" : " · placement odds appear once all picks lock");
+  $("sub").textContent = `Week ${d.week} · $${d.pot} pot ($${d.payouts.join(" / $")}) · updated ${when}`;
   const cols = $("showPicks").checked ? gameCols(d) : [];
   document.querySelector("#tbl thead tr").innerHTML =
     `<th class="name">Entry</th><th>W</th><th>TB</th>` + cols.map(x => gameHeader(x.g)).join("") +
-    (sim ? `<th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>E$</th><th></th>` : "");
+    (cols.length ? `<th>TB</th><th>W</th>` : "");
   const tb = document.querySelector("#tbl tbody");
   tb.innerHTML = "";
   for (const e of d.entries) {
     const tr = document.createElement("tr");
-    const p = e.p_place;
     tr.innerHTML = `<td class="name">${e.handle}</td><td>${e.wins}</td><td>${e.tb ?? "–"}</td>` +
       cols.map(x => pickCell(x.g, e.picks ? e.picks[x.i] : null)).join("") +
-      (sim ? `<td>${pct(p[0])}</td><td>${pct(p[1])}</td><td>${pct(p[2])}</td><td>${pct(p[3])}</td>` +
-      `<td>$${e.ev.toFixed(2)}</td>` +
-      `<td class="name"><span class="bar" style="width:${Math.round(e.ev / d.payouts[0] * 60)}px"></span></td>` : "");
+      (cols.length ? `<td>${e.tb ?? "–"}</td><td>${e.wins}</td>` : "");
     tb.appendChild(tr);
   }
 }
